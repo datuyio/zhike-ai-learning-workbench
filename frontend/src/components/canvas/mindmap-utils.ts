@@ -1,4 +1,5 @@
 import { downloadTextFile } from './document-export';
+import { tryParseJsonValue } from '../../utils/json-parse';
 
 export type MindmapNode = {
   id: string;
@@ -98,9 +99,11 @@ export function resolveMindmapSource(content: string): MindmapSourceDocument {
   const raw = (content || '').trim();
   if (!raw) return { syntax: 'markdown', source: '' };
   try {
-    const parsed = JSON.parse(stripCodeFence(raw)) as { chart_type?: string; syntax?: string; source_code?: unknown };
-    if (parsed.chart_type === 'mindmap' && parsed.syntax === 'mermaid' && typeof parsed.source_code === 'string') {
-      return { syntax: 'mermaid', source: normalizeMermaidSource(parsed.source_code) };
+    const parsed = tryParseJsonValue(stripCodeFence(raw));
+    if (!parsed || typeof parsed !== 'object') throw new Error('导图 JSON 结构无效');
+    const document = parsed as { chart_type?: string; syntax?: string; source_code?: unknown };
+    if (document.chart_type === 'mindmap' && document.syntax === 'mermaid' && typeof document.source_code === 'string') {
+      return { syntax: 'mermaid', source: normalizeMermaidSource(document.source_code) };
     }
   } catch {
     // 旧资源可能仍是 Markdown 正文，解析失败时直接走兼容渲染。

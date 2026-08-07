@@ -783,7 +783,6 @@ export function parsePathNode(payload: unknown): PathNode {
   ) {
     throw new Error('学习路径节点响应缺少核心字段');
   }
-  const masteryScore = optionalNumber(payload.mastery_score) ?? payload.mastery;
   return {
     id: payload.id,
     course_id: optionalString(payload.course_id),
@@ -791,7 +790,7 @@ export function parsePathNode(payload: unknown): PathNode {
     concept_name: optionalString(payload.concept_name),
     title: payload.title,
     mastery: payload.mastery,
-    mastery_score: masteryScore,
+    mastery_score: optionalNumber(payload.mastery_score),
     status: payload.status,
     is_remedial: typeof payload.is_remedial === 'boolean' ? payload.is_remedial : undefined,
     isRemedial: typeof payload.isRemedial === 'boolean' ? payload.isRemedial : undefined,
