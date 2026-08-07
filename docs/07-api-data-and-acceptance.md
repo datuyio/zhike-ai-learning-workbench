@@ -630,7 +630,55 @@ DELETE /api/v1/learning-schedules/{item_id}
 * 课程日程创建和完成会写入 `LearningEvent`，作为学习进度报告、画像证据和后续路径调整的上下文。
 * 普通用户只能访问自己的日程。
 
-### 2.12 用户侧课程资料
+### 2.12 学习行为事件
+
+学习行为事件用于采集学生在助学端的学习行为（对话、做题、看资料、跑代码、完成课时），并按天 / 按周 / 按课程维度聚合统计。事件按当前登录用户隔离，`user_id` 由登录态解析后写入 `student_learning_events.student_id`，前端不传 `user_id`。
+
+```http
+POST   /api/v1/learning/events        # 采集一条事件
+GET    /api/v1/learning/events/stats  # 聚合统计当前用户事件
+```
+
+`POST /api/v1/learning/events` 请求体：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `course_id` | string? | 事件关联课程 ID，可空表示跨课程事件。 |
+| `event_type` | enum | `chat`、`quiz`、`resource_view`、`code_run`、`lesson_complete`。 |
+| `event_data` | object? | 事件元数据载荷，写入 `event_metadata` JSONB。 |
+| `session_id` | string? | 学习会话标识，合并进 `event_metadata.session_id`，不单独建列。 |
+
+`GET /api/v1/learning/events/stats` 查询参数：
+
+| 参数 | 说明 |
+|---|---|
+| `dimension` | 聚合维度：`day`（默认）/ `week` / `course`。 |
+| `course_id` | 可选，按课程 ID 过滤。 |
+| `start_date` / `end_date` | 可选，ISO 8601 时间范围；均未提供时默认最近 30 天。 |
+
+响应结构：
+
+```json
+{
+  "dimension": "day",
+  "student_id": "uuid",
+  "course_id": null,
+  "range_start": "2026-08-01T00:00:00Z",
+  "range_end": "2026-08-07T00:00:00Z",
+  "buckets": [
+    {"key": "2026-08-01", "total": 3, "by_type": {"chat": 2, "quiz": 1}}
+  ],
+  "total": 3
+}
+```
+
+关键行为：
+
+* 复用 0045_ta_portal_base 迁移建立的 `student_learning_events` 表，不改 schema；助教端 `ta.py` 读取同一张表，数据互通。
+* `event_data` 与 `session_id` 合并写入 `event_metadata` JSONB，不新增列、不新增迁移。
+* 普通用户只能采集与统计自己的事件；登录态失效或用户不存在时返回 401/404。
+
+### 2.13 用户侧课程资料
 
 用户侧课程资料接口只暴露当前用户有权访问课程下的有效文档，用于学习路径资料范围切换、课程资料问答入口和原始教材预览。
 
