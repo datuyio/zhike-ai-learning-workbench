@@ -3,8 +3,10 @@ import { parseJsonValue } from './json-parse';
 export type JsonValidator<T> = (value: unknown) => value is T;
 
 function getBrowserStorage(kind: 'localStorage' | 'sessionStorage'): Storage | null {
-  if (typeof window === 'undefined') return null;
   try {
+    const globalStorage = globalThis[kind];
+    if (globalStorage) return globalStorage;
+    if (typeof window === 'undefined') return null;
     return kind === 'localStorage' ? window.localStorage : window.sessionStorage;
   } catch (error) {
     logStorageWarning('访问浏览器存储失败', kind, error);

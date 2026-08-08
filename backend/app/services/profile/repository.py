@@ -3,10 +3,12 @@ from __future__ import annotations
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.models import (
     ConceptMastery,
@@ -374,6 +376,54 @@ class LearningProfileRepository:
                     status=ACTIVE_STATUS,
                 )
             )
+
+    def record_resource_usage_evidence(
+        self,
+        *,
+        user: User,
+        course: Course | None,
+        resource_id: str,
+        resource_title: str,
+        resource_type: str | None = None,
+    ) -> None:
+        """记录一条资源使用证据到画像证据链。
+
+        当学生浏览/使用资源时（由学习行为事件 resource_view 触发），
+        转写一条 source_type="resource_usage" 的课程作用域证据，
+        维度为 resource_preference（资源偏好），用于后续偏好分析与推荐。
+
+        参数:
+            user: 当前用户对象。
+            course: 资源所属课程，通用资源为 None。
+            resource_id: 资源标识，写入 source_id。
+            resource_title: 资源标题，写入 label 与 summary。
+            resource_type: 资源类型（lecture/quiz/code_lab 等），写入 note。
+
+        副作用与失败模式:
+            会新增一条 ProfileEvidence 记录；不单独提交事务（由调用方提交）。
+            course 为 None 时作用域仍记 course 但 course_id 留空，
+            避免无课程资源污染全局画像。
+        """
+        label = (resource_title or "资源浏览")[:120]
+        note = f"资源类型：{resource_type}" if resource_type else "资源浏览"
+        self.db.add(
+            ProfileEvidence(
+                user_id=user.id,
+                course_id=course.id if course else None,
+                conversation_id=None,
+                scope="course",
+                dimension_key="resource_preference",
+                label=label,
+                source_type="resource_usage",
+                source_id=str(resource_id)[:120],
+                delta=0,
+                confidence_delta=0.6,
+                note=note[:500],
+                summary=label,
+                confidence=0.6,
+                status=ACTIVE_STATUS,
+            )
+        )
 
     def promote_cross_course_candidates(self, user: User) -> None:
         """把多课程重复出现的候选弱点提升为全局画像维度。"""
@@ -813,6 +863,80 @@ class LearningProfileRepository:
             evidence_summary=latest.summary if latest else self._latest_evidence_note(item),
             source_type=latest.source_type if latest else None,
         )
+
+    def list_evidence(
+        self,
+        *,
+        user_external_id: str,
+        dimension: str | None = None,
+        source_type: str | None = None,
+        scope: str | None = None,
+        course_id: str | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> dict[str, Any]:
+        """查询当前用户的画像证据链，支持按维度、来源、作用域、课程和时间范围过滤并分页。
+
+        参数:
+            user_external_id: 当前用户外部 ID。
+            dimension: 仅返回该维度键的证据，为空则不限。
+            source_type: 仅返回该来源类型（conversation/assessment/user_correction/resource_usage 等）的证据。
+            scope: 作用域过滤（global/course/session），为空则不限。
+            course_id: 课程 slug 过滤，仅在课程作用域证据中匹配。
+            start_date: 起始时间（含），ISO 8601。
+            end_date: 结束时间（含），ISO 8601。
+            page: 页码，从 1 开始。
+            page_size: 每页条数，默认 20。
+
+        返回:
+            {"items": list[ProfileEvidenceDTO], "meta": {"page", "page_size", "total"}}。
+
+        副作用与失败模式:
+            仅读取数据库；用户不存在时返回空列表与零计数，不抛异常。
+        """
+        user = self._user(user_external_id)
+        if not user:
+            return {"items": [], "meta": {"page": page, "page_size": page_size, "total": 0}}
+
+        clauses: list[ColumnElement[bool]] = [ProfileEvidence.user_id == user.id]
+        if dimension:
+            clauses.append(ProfileEvidence.dimension_key == dimension)
+        if source_type:
+            clauses.append(ProfileEvidence.source_type == source_type)
+        if scope:
+            clauses.append(ProfileEvidence.scope == scope)
+        if course_id:
+            course = self._course(course_id)
+            if course:
+                clauses.append(ProfileEvidence.course_id == course.id)
+            else:
+                # 课程 slug 无效时直接返回空，避免误返回其他课程证据
+                return {"items": [], "meta": {"page": page, "page_size": page_size, "total": 0}}
+        if start_date:
+            clauses.append(ProfileEvidence.created_at >= start_date)
+        if end_date:
+            clauses.append(ProfileEvidence.created_at <= end_date)
+
+        total = self.db.execute(
+            select(func.count()).select_from(ProfileEvidence).where(*clauses)
+        ).scalar_one()
+        rows = (
+            self.db.execute(
+                select(ProfileEvidence)
+                .where(*clauses)
+                .order_by(ProfileEvidence.created_at.desc())
+                .offset(max(0, (page - 1) * page_size))
+                .limit(max(1, page_size))
+            )
+            .scalars()
+            .all()
+        )
+        return {
+            "items": [self._evidence_to_dto(row) for row in rows],
+            "meta": {"page": page, "page_size": page_size, "total": int(total or 0)},
+        }
 
     def _evidence_for_dimension(self, item: ProfileDimension, scope: str) -> list[ProfileEvidenceDTO]:
         clauses = [

@@ -1,4 +1,5 @@
 import { useEffect, useReducer } from 'react';
+import { readLocalJson, writeLocalJson, writeLocalString } from '../utils/browser-storage';
 import {
   ONBOARDING_COMPLETED_KEY_PREFIX,
   ONBOARDING_STORAGE_KEY_PREFIX,
@@ -41,9 +42,9 @@ export function persistOnboarding(state: OnboardingState, userId: string): void 
   try {
     const storageKey = buildUserScopedStorageKey(ONBOARDING_STORAGE_KEY_PREFIX, userId);
     const completedKey = buildUserScopedStorageKey(ONBOARDING_COMPLETED_KEY_PREFIX, userId);
-    localStorage.setItem(storageKey, JSON.stringify(state));
+    writeLocalJson(storageKey, state);
     if (state.completedAt) {
-      localStorage.setItem(completedKey, state.completedAt);
+      writeLocalString(completedKey, state.completedAt);
     }
   } catch {
     // localStorage 不可用时静默失败
@@ -54,10 +55,7 @@ export function persistOnboarding(state: OnboardingState, userId: string): void 
 export function restoreOnboarding(userId: string): OnboardingState | null {
   try {
     const storageKey = buildUserScopedStorageKey(ONBOARDING_STORAGE_KEY_PREFIX, userId);
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as OnboardingState;
-    if (!parsed || typeof parsed !== 'object') return null;
+    const parsed = readLocalJson<OnboardingState | null>(storageKey, null, (value): value is OnboardingState => Boolean(value && typeof value === 'object'));
     return parsed;
   } catch {
     return null;

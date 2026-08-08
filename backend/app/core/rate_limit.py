@@ -107,3 +107,22 @@ def check_resource_rate_limit(user_id: str, course_id: str) -> None:
     )
     if not allowed:
         raise RateLimitExceeded("resource.generate", retry_after)
+
+
+def check_sandbox_rate_limit(user_id: str) -> None:
+    """检查指定用户在代码沙箱中的分钟级限流。
+
+    参数:
+        user_id: 当前请求用户标识。
+
+    异常:
+        RateLimitExceeded: 当沙箱执行次数超过配置的分钟级上限时抛出。
+    """
+    key = f"rate:sandbox:{_normalize_scope_part(user_id)}"
+    allowed, retry_after = _consume_fixed_window(
+        key,
+        limit=settings.SANDBOX_RATE_LIMIT_PER_MINUTE,
+        window_seconds=60,
+    )
+    if not allowed:
+        raise RateLimitExceeded("sandbox.execute", retry_after)

@@ -1,0 +1,14 @@
+{
+  "name": "zhike-sandbox-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "智课代码沙箱微服务：基于 Node + Pyodide 执行用户提交的 Python 代码，供 FastAPI 后端转发调用",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "comments": {
+    "deps_location": "Pyodide 体积较大，实际依赖安装在 D 盘（见 D:/zhike-sandbox-deps），通过 SANDBOX_NODE_MODULES 环境变量指向，避免污染项目仓库与 C 盘",
+    "deps": ["pyodide", "express"]
+  }
+}

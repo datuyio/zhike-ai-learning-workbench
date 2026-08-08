@@ -13,6 +13,10 @@ ChatIntentType = Literal[
     "KNOWLEDGE_QA",
     "RESOURCE_GENERATION",
     "GENERAL_CHAT",
+    # 多模态智能辅导意图（T-B-03）：仅 workflow 层识别，编排层一律按 default_chat 下发，
+    # 复用 _handle_default_chat → workflow.run_chat 路径，由 workflow._node_route 路由到 code_tutor / diagram_generation。
+    "CODE_TUTOR",
+    "DIAGRAM_GENERATION",
 ]
 
 
@@ -184,6 +188,10 @@ class AiMessageRequest(BaseModel):
         intent_type: ChatIntentType
         if self.action_type == "resource_generation":
             intent_type = "RESOURCE_GENERATION"
+        elif self.intent_type in {"CODE_TUTOR", "DIAGRAM_GENERATION"}:
+            # 多模态辅导意图（T-B-03）：保留前端显式传入的意图，避免被下面的
+            # mode/learning_scope 重算覆盖成 DEFAULT_CHAT，导致 workflow 层识别不到。
+            intent_type = self.intent_type
         elif self.mode == "course_rag_qa":
             intent_type = "COURSE_RAG_QA"
         elif self.learning_scope == "general":
