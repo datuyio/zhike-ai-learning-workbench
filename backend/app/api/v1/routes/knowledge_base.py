@@ -56,6 +56,7 @@ from app.services.knowledge.iflytek.retrieval_adapter import IflytekRetrievalAda
 from app.services.knowledge.iflytek.native_chunk_revision import NativeChunkRevisionService
 from app.services.knowledge.iflytek.native_chunk_sync import ChatdocNativeChunkSync
 from app.services.knowledge.iflytek.pipeline_config import PipelineConfigJsonError, parse_pipeline_stage_json
+from app.services.knowledge.local_knowledge import LocalKnowledgeError, LocalKnowledgeService
 from app.services.knowledge.admin_service import KnowledgeAdminMutationService
 from app.services.knowledge.repository import KnowledgeRepository
 from app.services.knowledge.upload_service import KnowledgeUploadError, KnowledgeUploadService
@@ -134,9 +135,15 @@ async def upload_document(
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> KnowledgeDocumentUploadResponse:
-    """上传课程资料到云端知识库，并创建本地文档记录。"""
+    """按配置将课程资料写入本地 pgvector 或现有 ChatDoc 云端知识库。"""
     content = await file.read()
     filename = file.filename or "未命名文档"
+    if settings.RAG_BACKEND == "local_pgvector":
+        try:
+            result = LocalKnowledgeService(db).ingest(course_id, filename, file.content_type, content, str(current_user.id))
+        except LocalKnowledgeError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return KnowledgeDocumentUploadResponse.model_validate(result)
     try:
         upload_stage_body = parse_pipeline_stage_json(pipeline_stage_json)
     except PipelineConfigJsonError as exc:
@@ -529,12 +536,22 @@ async def search_knowledge(
     wiki_filter_score: float | None = Query(None, ge=0.0, le=1.0),
     db: Session = Depends(get_db),
 ) -> KnowledgeSearchResponse:
-    """执行云端知识库向量检索并返回引用证据。"""
+    """执行当前配置的本地 pgvector 或 ChatDoc 云端检索并返回引用证据。"""
+    if settings.RAG_BACKEND == "local_pgvector":
+        started = time.perf_counter()
+        try:
+            citations = LocalKnowledgeService(db).search(course_id, q, limit, document_id=document_id)
+        except LocalKnowledgeError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return KnowledgeSearchResponse.model_validate({
+            "course_id": course_id,
+            "query": q,
+            "retrieval_mode": "local_pgvector",
+            "items": [citation.model_dump() for citation in citations],
+            "latency_ms": int((time.perf_counter() - started) * 1000),
+        })
     if settings.RAG_BACKEND != "iflytek_chatdoc":
-        raise HTTPException(
-            status_code=503,
-            detail="知识检索仅支持云端知识库向量检索。",
-        )
+        raise HTTPException(status_code=503, detail=f"不支持的知识库后端：{settings.RAG_BACKEND}")
     adapter = IflytekRetrievalAdapter(db, integration_key=integration_key)
     started = time.perf_counter()
     config_service = ChatdocConfigService(db)
