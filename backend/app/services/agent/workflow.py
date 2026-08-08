@@ -17,6 +17,7 @@ from app.schemas.ai import AgentTraceEvent, ChatQuality, ChatRequest, ChatRespon
 from app.schemas.common import Citation
 from app.schemas.resource import ResourceGenerateRequest
 from app.services.agent.cite_verifier import CiteVerifier
+from app.services.agent.multimodal_output import build_multimodal_system_prompt
 from app.services.agent.retrieval_guard import should_refuse_low_confidence
 from app.services.resource.queue import enqueue_resource_generation
 from app.services.resource.repository import ResourceRepository
@@ -287,12 +288,22 @@ class AgentWorkflow:
         payload = state["payload"]
         if payload.intent_type == "RESOURCE_GENERATION":
             route_decision = "resource_request"
+        elif payload.intent_type == "CODE_TUTOR":
+            route_decision = "code_tutor"
+        elif payload.intent_type == "DIAGRAM_GENERATION":
+            route_decision = "diagram_generation"
         elif is_general_learning(payload):
-            route_decision = "default_chat"
+            # general 场景同样对代码/图解关键词开窗，否则隐式代码/图解意图会被吞成 default_chat。
+            keyword_route = self._resolve_route_decision(payload.message)
+            route_decision = keyword_route if keyword_route in {"code_tutor", "diagram_generation"} else "default_chat"
         elif payload.intent_type in {"COURSE_RAG_QA", "KNOWLEDGE_QA"}:
             route_decision = "course_rag_qa"
         elif payload.intent_type in {"DEFAULT_CHAT", "GENERAL_CHAT"}:
-            route_decision = "default_chat"
+            # 仅对代码辅导/图解生成关键词开窗，避免 resource/assessment 关键词劫持回归：
+            # 资源生成与评估意图已在上游 RESOURCE_GENERATION 分支或 action_type 处理，
+            # 此处只让隐式代码/图解意图被识别，其余一律走 default_chat 保持原行为。
+            keyword_route = self._resolve_route_decision(payload.message)
+            route_decision = keyword_route if keyword_route in {"code_tutor", "diagram_generation"} else "default_chat"
         else:
             route_decision = self._resolve_route_decision(payload.message)
         return {
@@ -306,10 +317,18 @@ class AgentWorkflow:
         lowered = (message or "").lower()
         resource_keywords = ["生成", "讲义", "题库", "题单", "ppt", "实验", "实操", "资源", "思维导图", "阅读包", "出题"]
         assessment_keywords = ["评分", "我答", "自测", "解释得对吗", "批改", "答对了吗"]
+        # 代码辅导关键词（T-B-03）：覆盖报错诊断、实现需求、语言名等隐式代码意图。
+        code_keywords = ["代码", "报错", "bug", "怎么写", "函数", "实现", "python", "异常", "编译", "运行报错", "语法错误", "栈"]
+        # 图解生成关键词（T-B-03）：覆盖流程图、关系图、示意图等隐式图解意图。
+        diagram_keywords = ["图解", "流程图", "关系图", "示意图", "画个图", "画一张图", "架构图", "mermaid", "时序图", "状态图"]
         if any(keyword in lowered for keyword in resource_keywords):
             return "resource_request"
         if any(keyword in lowered for keyword in assessment_keywords):
             return "assessment_feedback"
+        if any(keyword in lowered for keyword in code_keywords):
+            return "code_tutor"
+        if any(keyword in lowered for keyword in diagram_keywords):
+            return "diagram_generation"
         return "default_chat"
 
     @staticmethod
@@ -528,6 +547,10 @@ class AgentWorkflow:
             }
 
         model_intent = "general_chat" if is_general_learning(payload) else state.get("intent", "course_qa")
+        # 多模态辅导意图（T-B-03）：显式保留 code_tutor/diagram_generation，避免被
+        # is_general_learning 的 general_chat 覆盖，导致 _build_model_messages 走错分支。
+        if state.get("intent") in {"code_tutor", "diagram_generation"}:
+            model_intent = state["intent"]
         messages = self._build_model_messages(
             payload=payload,
             context=context,
@@ -960,6 +983,11 @@ class AgentWorkflow:
             state["onboarding_mode"] = True
         else:
             state["onboarding_mode"] = False
+        # 多模态辅导意图（T-B-03）：强制跳过 onboarding 模式。引导模式会把 answer 当
+        # 结构化 JSON 解析（_parse_onboarding_structured_answer），而代码/图解输出的是
+        # 含围栏块的 Markdown，不是合法 JSON，会被降级为整段 raw 文本，导致画像抽取错乱。
+        if payload.intent_type in {"CODE_TUTOR", "DIAGRAM_GENERATION"}:
+            state["onboarding_mode"] = False
 
         yield {"type": "agent_trace", "event": AgentTraceEvent(step="课程上下文", status="running", detail="解析课程、会话与知识点")}
         state = {**state, **self._node_context(state)}
@@ -996,6 +1024,10 @@ class AgentWorkflow:
         else:
             payload_for_stream = state["payload"]
             model_intent = "general_chat" if is_general_learning(payload_for_stream) else state.get("intent", "course_qa")
+            # 多模态辅导意图（T-B-03）：显式保留 code_tutor/diagram_generation，避免被
+            # is_general_learning 的 general_chat 覆盖，确保 _build_model_messages 走多模态分支。
+            if state.get("intent") in {"code_tutor", "diagram_generation"}:
+                model_intent = state["intent"]
             onboarding_prompt_suffix = ""
             is_onboarding = bool(state.get("onboarding_mode"))
             if is_onboarding:
@@ -1428,6 +1460,23 @@ class AgentWorkflow:
         )
         if onboarding_prompt_suffix:
             profile_rule += onboarding_prompt_suffix
+        # 多模态辅导意图（T-B-03）：代码辅导 / 图解生成走专门 system prompt，约束输出为
+        # 含代码块或 Mermaid 图解的混合 Markdown。画像与引用由 build_multimodal_system_prompt
+        # 内部拼接，这里不重复套 profile_rule，避免重复向模型输出画像。
+        if intent in {"code_tutor", "diagram_generation"}:
+            system = build_multimodal_system_prompt(
+                intent=intent,
+                context=context,
+                profile_context=profile_context,
+                citations=citations,
+                learning_scope=payload.learning_scope,
+            )
+            messages: list[dict[str, str]] = [{"role": "system", "content": system}]
+            if onboarding_history:
+                for item in onboarding_history:
+                    messages.append({"role": item.role, "content": item.content})
+            messages.append({"role": "user", "content": f"学生问题：{payload.message}"})
+            return messages
         if intent == "general_resource_markdown" or (is_general_learning(payload) and intent == "general_chat"):
             system = (
                 "你是通用 AI 学习助手，可以帮助学生解释概念、制定学习计划、生成资料和练习题。"
