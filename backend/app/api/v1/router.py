@@ -19,6 +19,7 @@ from app.api.v1.routes import (
     paths,
     resource_review,
     resources,
+    sandbox,
     schedules,
     site_settings,
     webhooks,
@@ -42,6 +43,7 @@ api_router.include_router(paths.router, tags=["learning-path"])
 api_router.include_router(schedules.router, prefix="/learning-schedules", tags=["learning-schedules"])
 api_router.include_router(learning_events.router, prefix="/learning", tags=["learning-events"])
 api_router.include_router(assessments.router, prefix="/assessments", tags=["assessments"])
+api_router.include_router(sandbox.router, prefix="/sandbox", tags=["sandbox"])
 api_router.include_router(site_settings.admin_router, prefix="/admin/settings", tags=["site-settings"])
 api_router.include_router(knowledge_base.router, prefix="/admin", tags=["knowledge"], dependencies=[Depends(require_admin)])
 api_router.include_router(chatdoc_config.router, prefix="/admin", tags=["chatdoc-config"], dependencies=[Depends(require_admin)])

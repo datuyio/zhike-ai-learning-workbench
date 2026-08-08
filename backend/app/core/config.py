@@ -87,6 +87,12 @@ class Settings(BaseSettings):
     MODEL_GATEWAY_HEALTH_CHECK_INTERVAL_SECONDS: int = 600
     MODEL_GATEWAY_HEALTH_COOLDOWN_SECONDS: int = 300
 
+    # 代码沙箱：后端转发到 Node + Pyodide 微服务执行用户代码
+    SANDBOX_SERVICE_URL: str = "http://127.0.0.1:8002"
+    SANDBOX_EXECUTION_TIMEOUT_SECONDS: float = 10.0
+    SANDBOX_MAX_CODE_BYTES: int = 64 * 1024
+    SANDBOX_RATE_LIMIT_PER_MINUTE: int = 20
+
     # 文档解析/向量化由讯飞 ChatDoc 云端完成（PDF / TXT / MD）
     RESOURCE_GENERATION_WORKER_ENABLED: bool = True
     RESOURCE_GENERATION_POLL_INTERVAL_SECONDS: float = 2.0

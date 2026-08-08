@@ -86,6 +86,8 @@ class LearningBehaviorService:
 
         副作用/失败模式:
             会写入 student_learning_events 表并提交事务；数据库异常会向上抛出。
+            当 event_type 为 resource_view 时，同步转写一条画像证据链记录；
+            证据写入失败不回滚已提交的事件，仅记录日志，避免画像耦合影响行为采集。
         """
         event = StudentLearningEvent(
             student_id=student_id,
@@ -96,7 +98,70 @@ class LearningBehaviorService:
         self.db.add(event)
         self.db.commit()
         self.db.refresh(event)
+
+        # 资源浏览事件同步转写画像证据，支撑资源偏好维度与推荐
+        if event_type == "resource_view":
+            self._write_resource_usage_evidence(
+                student_id=student_id,
+                course_id=course_id,
+                event_data=event_data or {},
+            )
         return event
+
+    def _write_resource_usage_evidence(
+        self,
+        *,
+        student_id: str,
+        course_id: str | None,
+        event_data: dict[str, Any],
+    ) -> None:
+        """把 resource_view 事件转写为画像证据链记录。
+
+        从 event_data 提取 resource_id / resource_title / resource_type，
+        通过 LearningProfileRepository 写入一条 source_type="resource_usage" 证据。
+        证据写入失败仅记录日志，不影响已提交的学习行为事件。
+
+        参数:
+            student_id: 已解析的 users.id 字符串。
+            course_id: 事件关联课程 ID，可为空。
+            event_data: 前端上报的资源元数据，含 resource_id / resource_title / resource_type。
+        """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        resource_id = event_data.get("resource_id") or event_data.get("resource_code")
+        if not resource_id:
+            # 缺少资源标识无法构造证据，跳过（事件本身已正常落库）
+            return
+        resource_title = str(event_data.get("resource_title") or "资源浏览")
+        resource_type = event_data.get("resource_type")
+
+        # 延迟 import 避免学习行为服务与画像服务形成循环依赖
+        from app.models import Course
+        from app.services.profile.repository import LearningProfileRepository
+
+        user = self.db.get(User, student_id)
+        if not user:
+            return
+        course = None
+        if course_id:
+            course = self.db.execute(
+                select(Course).where(Course.id == course_id)
+            ).scalar_one_or_none()
+        try:
+            repo = LearningProfileRepository(self.db)
+            repo.record_resource_usage_evidence(
+                user=user,
+                course=course,
+                resource_id=str(resource_id),
+                resource_title=resource_title,
+                resource_type=str(resource_type) if resource_type else None,
+            )
+            self.db.commit()
+        except Exception:  # noqa: BLE001 - 证据写入失败不应影响行为采集主流程
+            self.db.rollback()
+            logger.warning("资源使用证据写入失败 student_id=%s resource_id=%s", student_id, resource_id, exc_info=True)
 
     @staticmethod
     def _group_rows(rows: list[tuple[Any, str]], dimension: LearningEventDimension) -> list[dict[str, Any]]:

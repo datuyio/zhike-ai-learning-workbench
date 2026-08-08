@@ -26,6 +26,21 @@ class ProfileEvidenceDTO(BaseModel):
     status: str = "active"
 
 
+class ProfileEvidenceListMeta(BaseModel):
+    """证据链分页元信息。"""
+
+    page: int = 1
+    page_size: int = 20
+    total: int = 0
+
+
+class ProfileEvidenceListResponse(BaseModel):
+    """画像证据链列表响应，支持按维度/来源/时间范围过滤与分页。"""
+
+    items: list[ProfileEvidenceDTO] = Field(default_factory=list)
+    meta: ProfileEvidenceListMeta = Field(default_factory=ProfileEvidenceListMeta)
+
+
 class ProfileDimensionDTO(BaseModel):
     """画像维度的前端返回结构。"""
 
