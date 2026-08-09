@@ -5,6 +5,7 @@ from app.api.v1.routes import (
     admin_announcements,
     ai,
     announcements,
+    assessment_report,
     assessments,
     auth,
     chatdoc_config,
@@ -41,6 +42,7 @@ api_router.include_router(site_settings.router, prefix="/settings", tags=["site-
 api_router.include_router(paths.router, tags=["learning-path"])
 api_router.include_router(schedules.router, prefix="/learning-schedules", tags=["learning-schedules"])
 api_router.include_router(assessments.router, prefix="/assessments", tags=["assessments"])
+api_router.include_router(assessment_report.router, prefix="/assessment", tags=["assessment"])
 api_router.include_router(recommendations.router, prefix="/recommendations", tags=["recommendations"])
 api_router.include_router(site_settings.admin_router, prefix="/admin/settings", tags=["site-settings"])
 api_router.include_router(knowledge_base.router, prefix="/admin", tags=["knowledge"], dependencies=[Depends(require_admin)])

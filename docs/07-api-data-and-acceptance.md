@@ -672,6 +672,51 @@ GET  /api/v1/courses/{course_id}/extracted-qa/{qa_id}
 
 ---
 
+### 2.14 学习效果评估报告
+
+学习效果评估报告用于 `/assessment/report` 聚合学习行为、画像、测验评分和资源使用数据，生成结构化评估报告，包含总体评分、维度评分和进步趋势。
+
+```http
+GET /api/v1/assessment/report?user_id={id}&course_id={id}
+```
+
+查询参数：
+
+| 参数 | 说明 |
+|---|---|
+| `user_id` | 可选，目标用户 external_id；不传则默认当前登录用户。 |
+| `course_id` | 可选，按课程过滤评估数据。 |
+
+关键行为：
+
+* 报告聚合 4 个数据源：`ProfileDimension`/`ConceptMastery`（知识掌握度）、`Assessment`（测验表现）、`LearningEvent`/`StudentLearningEvent`（学习参与度）、`Resource`（资源利用）。
+* 4 个维度按权重（35%/30%/20%/15%）加权计算总体评分 0-100，并映射为优秀/良好/中等/待加强等级。
+* 进步趋势按天聚合最近 4 周的测验评分，返回按时间顺序排列的数据点。
+* 薄弱点来自画像维度中低于 60 分的掌握度指标，以及 ConceptMastery 中低于 60 分的知识点。
+* 建议按薄弱点和低分维度自动生成，涵盖复习、练习、参与度和资源利用等方面。
+* 普通用户只能查看自己的报告；查询他人报告需管理员或助教权限。
+
+报告结构（`LearningReportResponse`）：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `user_id` | string | 用户 external_id |
+| `course_id` | string? | 课程 ID |
+| `course_title` | string? | 课程标题 |
+| `overall_score` | int | 总体评分 0-100 |
+| `overall_level` | string | 总体等级 |
+| `dimensions` | ReportDimensionScore[] | 4 个维度评分 |
+| `progress_trend` | ReportTrendPoint[] | 进步趋势数据点 |
+| `weak_points` | string[] | 薄弱知识点/维度列表 |
+| `recommendations` | string[] | 改进建议列表 |
+| `assessment_count` | int | 参与测评次数 |
+| `event_count` | int | 学习行为事件总数 |
+| `generated_at` | datetime | 报告生成时间 |
+
+验收标准：返回完整的评估报告 JSON，包含总体评分、至少 4 个维度评分和进步趋势数据。
+
+---
+
 ## 3. 管理侧 API
 
 ### 3.1 知识大本营
