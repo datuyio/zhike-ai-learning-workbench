@@ -59,6 +59,18 @@ class Settings(BaseSettings):
     DEFAULT_CHAT_MODEL: str = "deepseek-chat"
     DEFAULT_EMBEDDING_MODEL: str = "bge-m3"
     EMBEDDING_DIM: int = 384
+    # 本地知识库配置；缓存目录通过环境变量覆盖，避免把模型权重提交到仓库。
+    LOCAL_EMBEDDING_MODEL: str = "BAAI/bge-small-zh-v1.5"
+    LOCAL_EMBEDDING_DIMENSION: int = 512
+    LOCAL_EMBEDDING_CACHE_DIR: str = "./storage/models"
+    LOCAL_EMBEDDING_DEVICE: str = "cpu"
+    LOCAL_KNOWLEDGE_CHUNK_SIZE: int = 1200
+    LOCAL_KNOWLEDGE_CHUNK_OVERLAP: int = 150
+    # 分块器版本标识，用于追踪切片来源；"page-paragraph-v1" 为旧版字符级，"sentence-window-v2" 为句子级滑动窗口
+    LOCAL_KNOWLEDGE_CHUNKER_VERSION: str = "sentence-window-v2"
+    LOCAL_KNOWLEDGE_BM25_WEIGHT: float = 0.3
+    LOCAL_KNOWLEDGE_VECTOR_WEIGHT: float = 0.7
+    LOCAL_KNOWLEDGE_SNIPPET_SIZE: int = 800
     RAG_RETRIEVAL_LIMIT: int = 5
     RAG_RETRIEVAL_MIN_SCORE: float = 0.65
     RAG_BACKEND: str = "iflytek_chatdoc"

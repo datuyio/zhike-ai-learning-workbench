@@ -606,3 +606,28 @@ http://localhost:5173/dashboard?mock=1
 8. 每个画像维度应有来源、更新时间和置信度。
 9. 资源生成任务必须有 ResourceTaskCard 和 ArtifactCanvas。
 10. 管理端必须能分别配置 ChatProvider 和 CloudRagProvider。
+
+## 本地知识库（T-B-07，Plan B）
+
+项目保留原有讯飞 ChatDoc 云端实现，同时新增可配置的本地 `PDF → PyMuPDF → BGE-small-zh-v1.5 → PGVector → 检索` 链路。默认仍使用 ChatDoc，避免影响已有功能；验收本地方案时，将 `.env` 中的 `RAG_BACKEND` 改为 `local_pgvector`。
+
+本地模型权重不会提交到 Git。首次使用本地后端时，程序会在第一次导入或检索触发模型加载，并把模型缓存到 `LOCAL_EMBEDDING_CACHE_DIR`。Windows 本机可以把该变量设置为 `D:/zhike-models/bge-small-zh-v1.5`，仓库只保存配置和自动初始化逻辑。
+
+```text
+RAG_BACKEND=local_pgvector
+LOCAL_EMBEDDING_MODEL=BAAI/bge-small-zh-v1.5
+LOCAL_EMBEDDING_DIMENSION=512
+LOCAL_EMBEDDING_CACHE_DIR=D:/zhike-models/bge-small-zh-v1.5
+LOCAL_EMBEDDING_DEVICE=cpu
+```
+
+安装依赖并完成验收：
+
+```bash
+pip install -r backend/requirements.txt
+alembic upgrade head
+# 管理端上传 PDF：POST /api/v1/admin/courses/{course_id}/documents
+# 知识库检索：GET /api/v1/admin/knowledge/search?course_id=...&q=...
+```
+
+本地后端只接受能直接提取文本的 PDF；扫描版 PDF 需要先 OCR。切片会保留页码、文档和切片编号，数据库向量列固定为 512 维；切换 Embedding 模型时必须同时检查维度和迁移。
