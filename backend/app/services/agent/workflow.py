@@ -13,7 +13,15 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.tracing import get_trace_id
-from app.schemas.ai import AgentTraceEvent, ChatQuality, ChatRequest, ChatResponse, SuggestedAction
+from app.schemas.ai import (
+    AgentTraceEvent,
+    ChatQuality,
+    ChatRequest,
+    ChatResponse,
+    SuggestedAction,
+    WorkflowStateSnapshot,
+    WorkflowStateUpdate,
+)
 from app.schemas.common import Citation
 from app.schemas.resource import ResourceGenerateRequest
 from app.services.agent.cite_verifier import CiteVerifier
@@ -178,7 +186,16 @@ class AgentWorkflow:
         self.graph = self._build_graph()
 
     def _build_graph(self) -> Any:
-        """构建 LangGraph 工作流；依赖不可用时返回空图并交给顺序兜底执行。"""
+        """构建 LangGraph 工作流；依赖不可用时返回空图并交给顺序兜底执行。
+
+        采用「公共前缀 + 按意图分支」的图结构：
+        - 公共前缀：load_context → route → safety，所有请求都先完成上下文加载、意图路由与安全审查。
+        - 意图分支：safety 之后按 route_decision 分流到不同 Agent 执行链。
+          - course_rag_qa / learning_plan / learning_progress / assessment_feedback：走完整检索链
+          - default_chat：普通课程聊天，跳过强制检索（检索节点内部已按路由跳过）
+          - general_chat：通用聊天，只走生成，不校验引用、不更新画像与学习路径
+        - generate 之后再次按分支决定是否继续引用检查（general_chat 直接结束）。
+        """
         if StateGraph is None:
             return None
         graph = StateGraph(AgentWorkflowState)
@@ -194,14 +211,52 @@ class AgentWorkflow:
         graph.set_entry_point("load_context")
         graph.add_edge("load_context", "route")
         graph.add_edge("route", "safety")
-        graph.add_edge("safety", "retrieve")
+        # 第一条条件边：按意图分流是否执行课程检索
+        graph.add_conditional_edges(
+            "safety",
+            self._route_to_next_after_safety,
+            {
+                "retrieve": "retrieve",
+                "generate": "generate",
+            },
+        )
         graph.add_edge("retrieve", "generate")
-        graph.add_edge("generate", "cite_check")
+        # 第二条条件边：general_chat 结束，其余意图继续引用检查与画像/路径沉淀
+        graph.add_conditional_edges(
+            "generate",
+            self._route_to_next_after_generate,
+            {
+                "cite_check": "cite_check",
+                "end": END,
+            },
+        )
         graph.add_edge("cite_check", "profile")
         graph.add_edge("profile", "path")
         graph.add_edge("path", "orchestrate")
         graph.add_edge("orchestrate", END)
         return graph.compile()
+
+    @staticmethod
+    def _route_to_next_after_safety(state: AgentWorkflowState) -> str:
+        """安全审查后按意图决定是否进入课程检索节点。
+
+        普通聊天（default_chat）与通用聊天（general_chat）不强制课程资料检索，
+        直接进入生成；其余意图（课程问答、学习计划、学习进度、评估反馈）需要检索依据。
+        """
+        decision = state.get("route_decision", "default_chat")
+        if decision in {"default_chat", "general_chat"}:
+            return "generate"
+        return "retrieve"
+
+    @staticmethod
+    def _route_to_next_after_generate(state: AgentWorkflowState) -> str:
+        """回答生成后决定是否继续引用检查与画像/路径沉淀。
+
+        general_chat 为不绑定课程的通用闲聊，无需引用校验与课程画像更新，直接结束。
+        """
+        if state.get("route_decision") == "general_chat":
+            return "end"
+        return "cite_check"
 
     @staticmethod
     def _append_trace(
@@ -282,23 +337,74 @@ class AgentWorkflow:
             ),
         }
 
-    def _node_route(self, state: AgentWorkflowState) -> AgentWorkflowState:
+    async def _node_route(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        """增强意图路由：优先使用显式 intent_type，对未明确指定的场景使用 HybridIntentRouter 细粒度分类。
+
+        支持更细粒度的路由决策：
+        - resource_request: 资源生成请求
+        - course_rag_qa: 课程资料问答
+        - default_chat: 默认学习对话
+        - learning_plan: 学习计划/开始学习
+        - learning_progress: 学习进度查询
+        - assessment_feedback: 评估反馈
+        - general_chat: 通用闲聊（不绑定课程）
+        """
         started_at = time.perf_counter()
         payload = state["payload"]
+        route_decision: str
+
+        # 第 1 层：显式 intent_type 覆盖（从前端或编排层传入）
         if payload.intent_type == "RESOURCE_GENERATION":
             route_decision = "resource_request"
-        elif is_general_learning(payload):
-            route_decision = "default_chat"
         elif payload.intent_type in {"COURSE_RAG_QA", "KNOWLEDGE_QA"}:
             route_decision = "course_rag_qa"
-        elif payload.intent_type in {"DEFAULT_CHAT", "GENERAL_CHAT"}:
-            route_decision = "default_chat"
+        elif payload.intent_type == "GENERAL_CHAT":
+            route_decision = "general_chat"
+        elif payload.intent_type == "DEFAULT_CHAT" and not is_general_learning(payload):
+            # 第 2 层：课程场景下使用 HybridIntentRouter 细粒度分类
+            try:
+                from app.schemas.ai import AiMessageRequest
+                from app.services.ai.intent_router import HybridIntentRouter
+
+                router = HybridIntentRouter()
+                ai_request = AiMessageRequest(
+                    user_id=state["user_id"],
+                    course_id=payload.course_id,
+                    conversation_id=payload.conversation_id,
+                    message=payload.message,
+                    mode="default_chat",
+                    learning_scope=payload.learning_scope,
+                )
+                intent_route = await router.classify_async(ai_request, db=state["db"])
+                intent_map: dict[str, str] = {
+                    "start_learning_session": "learning_plan",
+                    "learning_plan_request": "learning_plan",
+                    "learning_progress_query": "learning_progress",
+                    "course_rag_qa": "course_rag_qa",
+                    "resource_generation": "resource_request",
+                    "default_chat": "default_chat",
+                    "general_chat": "general_chat",
+                }
+                route_decision = intent_map.get(intent_route.intent, "default_chat")
+                detail = f"{intent_route.intent} ({intent_route.confidence:.2f}) via {intent_route.source}"
+            except Exception as exc:
+                logger.warning(
+                    "HybridIntentRouter 分类失败，退回规则路由：trace_id=%s exc_type=%s",
+                    get_trace_id(),
+                    type(exc).__name__,
+                    exc_info=True,
+                )
+                route_decision = self._resolve_route_decision(payload.message)
+                detail = route_decision
         else:
+            # 第 3 层：通用学习或无明确意图时使用规则路由
             route_decision = self._resolve_route_decision(payload.message)
+            detail = route_decision
+
         return {
             "route_decision": route_decision,
             "intent": route_decision,
-            "trace": self._append_trace(state, "意图路由", "completed", route_decision, duration_ms=self._elapsed_ms(started_at)),
+            "trace": self._append_trace(state, "意图路由", "completed", detail, duration_ms=self._elapsed_ms(started_at)),
         }
 
     @staticmethod
@@ -923,14 +1029,20 @@ class AgentWorkflow:
 
     async def _run_without_graph(self, state: AgentWorkflowState) -> AgentWorkflowState:
         merged = {**state, **self._node_context(state)}
-        merged = {**merged, **self._node_route(merged)}
+        merged = {**merged, **await self._node_route(merged)}
         merged = {**merged, **self._node_safety(merged)}
-        merged = {**merged, **await self._node_retrieve(merged)}
+        # 按意图分支：general_chat 与 default_chat 跳过强制检索
+        after_safety: str = self._route_to_next_after_safety(merged)
+        if after_safety == "retrieve":
+            merged = {**merged, **await self._node_retrieve(merged)}
         merged = {**merged, **await self._node_generate(merged)}
-        merged = {**merged, **self._node_cite_check(merged)}
-        merged = {**merged, **await self._node_profile(merged)}
-        merged = {**merged, **self._node_path(merged)}
-        merged = {**merged, **self._node_orchestrate(merged)}
+        # 按意图分支：general_chat 直接结束，不校验引用、不更新画像/路径
+        after_generate: str = self._route_to_next_after_generate(merged)
+        if after_generate == "cite_check":
+            merged = {**merged, **self._node_cite_check(merged)}
+            merged = {**merged, **await self._node_profile(merged)}
+            merged = {**merged, **self._node_path(merged)}
+            merged = {**merged, **self._node_orchestrate(merged)}
         return merged
 
     async def stream_chat(self, payload: ChatRequest, db: Session, user_id: str) -> AsyncIterator[dict[str, Any]]:
@@ -948,6 +1060,8 @@ class AgentWorkflow:
             return
 
         state: AgentWorkflowState = {"payload": payload, "db": db, "user_id": user_id, "trace": []}
+        _start_time = time.time()
+        _start_monotonic = time.monotonic()
 
         onboarding_service = OnboardingService(db)
         onboarding_history = list(payload.onboarding_history or [])
@@ -968,7 +1082,7 @@ class AgentWorkflow:
         await asyncio.sleep(0.03)
 
         yield {"type": "agent_trace", "event": AgentTraceEvent(step="意图路由", status="running", detail="判断问答、资源生成或评估意图")}
-        state = {**state, **self._node_route(state)}
+        state = {**state, **await self._node_route(state)}
         yield {"type": "agent_trace", "event": state["trace"][-1]}
         await asyncio.sleep(0.03)
 
@@ -977,11 +1091,33 @@ class AgentWorkflow:
         yield {"type": "agent_trace", "event": state["trace"][-1]}
         await asyncio.sleep(0.03)
 
-        yield {"type": "agent_trace", "event": AgentTraceEvent(step="课程检索", status="running", detail="限定当前课程知识库检索")}
-        state = {**state, **await self._node_retrieve(state)}
-        yield {"type": "agent_trace", "event": state["trace"][-1]}
-        yield {"type": "citation_update", "citations": state.get("citations") or []}
-        await asyncio.sleep(0.03)
+        # 工作流状态推送：完成公共前缀后的分支决策
+        yield {
+            "type": "workflow_update",
+            "update": WorkflowStateUpdate(
+                snapshot=WorkflowStateSnapshot(
+                    current_node="safety",
+                    completed_nodes=["load_context", "route", "safety"],
+                    intent=state.get("intent", "default_chat"),
+                    status="running",
+                    started_at=_start_time,
+                    elapsed_ms=int((time.monotonic() - _start_monotonic) * 1000),
+                    route_decision=state.get("route_decision", "default_chat"),
+                ),
+                trace=list(state.get("trace") or []),
+                previous_node="safety",
+            ),
+        }
+        # 按意图分流：default_chat / general_chat 跳过强制检索
+        after_safety: str = self._route_to_next_after_safety(state)
+        if after_safety == "retrieve":
+            yield {"type": "agent_trace", "event": AgentTraceEvent(step="课程检索", status="running", detail="限定当前课程知识库检索")}
+            state = {**state, **await self._node_retrieve(state)}
+            yield {"type": "agent_trace", "event": state["trace"][-1]}
+            yield {"type": "citation_update", "citations": state.get("citations") or []}
+            await asyncio.sleep(0.03)
+        else:
+            yield {"type": "agent_trace", "event": AgentTraceEvent(step="课程检索", status="skipped", detail=f"{state.get('route_decision', 'default_chat')} 意图无需强制检索")}
 
         yield {"type": "agent_trace", "event": AgentTraceEvent(step="回答生成", status="running", detail="通过模型网关调用课程对话模型")}
         onboarding_round = (
@@ -1099,54 +1235,98 @@ class AgentWorkflow:
             state["trace"] = self._append_trace(state, "回答生成", status, detail)
             yield {"type": "agent_trace", "event": state["trace"][-1]}
 
-        state = {**state, **self._node_cite_check(state)}
-        yield {"type": "agent_trace", "event": state["trace"][-1]}
+        # 按意图分支：general_chat 直接结束，不校验引用、不更新画像/路径
+        after_generate: str = self._route_to_next_after_generate(state)
         quality_payload = state.get("quality") or {}
-        yield {
-            "type": "quality_update",
-            "quality": {
-                "cite_check": quality_payload.get("cite_check", "skipped"),
-                "safety": quality_payload.get("safety", "passed"),
-                "citation_coverage": quality_payload.get("citation_coverage"),
-            },
-        }
-        state = {**state, **await self._node_profile(state)}
-        yield {"type": "agent_trace", "event": state["trace"][-1]}
-        yield {"type": "profile_updated", "summary": "本轮对话已作为画像证据记录，后续可驱动路径补救。"}
-
         onboarding_meta_payload: dict[str, Any] | None = None
-        if state.get("onboarding_mode"):
-            # chips 已在前置分支通过 _parse_onboarding_structured_answer 统一解析并注入
-            # onboarding_service._llm_chips；此处不再做正则兜底，避免覆盖已设置的 chips
-            # 或误截断 state["answer"]（已为 user_visible 纯文本）
-            completed_round = onboarding_service.infer_completed_round(onboarding_history)
-            meta = onboarding_service.assemble_metadata(
-                user_external_id=user_id,
-                round_num=completed_round,
-                user_message=payload.message,
-                history=onboarding_history,
-                answer_after_round=True,
-            )
-            state["answer"] = onboarding_service.onboarding_answer_for_round(
-                completed_round,
-                onboarding_history,
-                state.get("answer", ""),
-                answer_after_round=True,
-            )
-            onboarding_meta_payload = meta.model_dump(by_alias=True)
-            state["onboarding_meta"] = onboarding_meta_payload
-            yield {"type": "onboarding_update", "meta": {"onboarding": onboarding_meta_payload}}
-
-        state = {**state, **self._node_path(state)}
-        yield {"type": "agent_trace", "event": state["trace"][-1]}
-        yield {"type": "path_updated", "status": "unchanged", "message": "当前节点保持学习中。"}
-        state = {**state, **self._node_orchestrate(state)}
-        yield {"type": "agent_trace", "event": state["trace"][-1]}
-        suggested_actions = state.get("suggested_actions") or []
-        if suggested_actions:
+        suggested_actions: list[Any] = []
+        if after_generate == "cite_check":
+            # 工作流状态推送：进入后半段（引用检查→画像→路径→编排）
+            completed_before_cite = ["load_context", "route", "safety"]
+            if state.get("route_decision") not in {"default_chat", "general_chat"}:
+                completed_before_cite.append("retrieve")
+            completed_before_cite.append("generate")
             yield {
-                "type": "suggested_actions",
-                "actions": [action.model_dump() for action in suggested_actions],
+                "type": "workflow_update",
+                "update": WorkflowStateUpdate(
+                    snapshot=WorkflowStateSnapshot(
+                        current_node="cite_check",
+                        completed_nodes=completed_before_cite,
+                        intent=state.get("intent", "default_chat"),
+                        status="running",
+                        started_at=_start_time,
+                        elapsed_ms=int((time.monotonic() - _start_monotonic) * 1000),
+                        route_decision=state.get("route_decision", "default_chat"),
+                    ),
+                    trace=list(state.get("trace") or []),
+                    previous_node="generate",
+                ),
+            }
+            state = {**state, **self._node_cite_check(state)}
+            yield {"type": "agent_trace", "event": state["trace"][-1]}
+            quality_payload = state.get("quality") or {}
+            yield {
+                "type": "quality_update",
+                "quality": {
+                    "cite_check": quality_payload.get("cite_check", "skipped"),
+                    "safety": quality_payload.get("safety", "passed"),
+                    "citation_coverage": quality_payload.get("citation_coverage"),
+                },
+            }
+            state = {**state, **await self._node_profile(state)}
+            yield {"type": "agent_trace", "event": state["trace"][-1]}
+            yield {"type": "profile_updated", "summary": "本轮对话已作为画像证据记录，后续可驱动路径补救。"}
+
+            if state.get("onboarding_mode"):
+                # chips 已在前置分支通过 _parse_onboarding_structured_answer 统一解析并注入
+                # onboarding_service._llm_chips；此处不再做正则兜底，避免覆盖已设置的 chips
+                # 或误截断 state["answer"]（已为 user_visible 纯文本）
+                completed_round = onboarding_service.infer_completed_round(onboarding_history)
+                meta = onboarding_service.assemble_metadata(
+                    user_external_id=user_id,
+                    round_num=completed_round,
+                    user_message=payload.message,
+                    history=onboarding_history,
+                    answer_after_round=True,
+                )
+                state["answer"] = onboarding_service.onboarding_answer_for_round(
+                    completed_round,
+                    onboarding_history,
+                    state.get("answer", ""),
+                    answer_after_round=True,
+                )
+                onboarding_meta_payload = meta.model_dump(by_alias=True)
+                state["onboarding_meta"] = onboarding_meta_payload
+                yield {"type": "onboarding_update", "meta": {"onboarding": onboarding_meta_payload}}
+
+            state = {**state, **self._node_path(state)}
+            yield {"type": "agent_trace", "event": state["trace"][-1]}
+            yield {"type": "path_updated", "status": "unchanged", "message": "当前节点保持学习中。"}
+            state = {**state, **self._node_orchestrate(state)}
+            yield {"type": "agent_trace", "event": state["trace"][-1]}
+            suggested_actions = state.get("suggested_actions") or []
+            if suggested_actions:
+                yield {
+                    "type": "suggested_actions",
+                    "actions": [action.model_dump() for action in suggested_actions],
+                }
+        else:
+            # general_chat 直接结束，不校验引用、不更新画像/路径
+            yield {
+                "type": "workflow_update",
+                "update": WorkflowStateUpdate(
+                    snapshot=WorkflowStateSnapshot(
+                        current_node="generate",
+                        completed_nodes=["load_context", "route", "safety", "generate"],
+                        intent=state.get("intent", "general_chat"),
+                        status="completed",
+                        started_at=_start_time,
+                        elapsed_ms=int((time.monotonic() - _start_monotonic) * 1000),
+                        route_decision=state.get("route_decision", "general_chat"),
+                    ),
+                    trace=list(state.get("trace") or []),
+                    previous_node="generate",
+                ),
             }
         self._persist_conversation_turn(state)
         quality_payload = state.get("quality") or {}
@@ -1349,7 +1529,7 @@ class AgentWorkflow:
         yield {"type": "session_started", "conversation_id": state["conversation_id"]}
         yield {"type": "agent_trace", "event": state["trace"][-1]}
 
-        state = {**state, **self._node_route(state)}
+        state = {**state, **await self._node_route(state)}
         yield {"type": "agent_trace", "event": state["trace"][-1]}
         state = {**state, **self._node_safety(state)}
         yield {"type": "agent_trace", "event": state["trace"][-1]}
