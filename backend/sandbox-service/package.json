@@ -1,0 +1,17 @@
+{
+  "name": "zhike-sandbox-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "智课代码沙箱微服务：基于 Node + Pyodide 执行用户提交的 Python 代码，供 FastAPI 后端转发调用",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "pyodide": "^314.0.3"
+  },
+  "comments": {
+    "deps_location": "默认依赖装在本目录 node_modules（执行 npm install 即可）。若本机需把 Pyodide 放到其他盘符，用环境变量 SANDBOX_NODE_MODULES 指向自备目录，仅本机优化不作为项目默认"
+  }
+}
