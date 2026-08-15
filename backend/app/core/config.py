@@ -59,6 +59,18 @@ class Settings(BaseSettings):
     DEFAULT_CHAT_MODEL: str = "deepseek-chat"
     DEFAULT_EMBEDDING_MODEL: str = "bge-m3"
     EMBEDDING_DIM: int = 384
+    # 本地知识库配置；缓存目录通过环境变量覆盖，避免把模型权重提交到仓库。
+    LOCAL_EMBEDDING_MODEL: str = "BAAI/bge-small-zh-v1.5"
+    LOCAL_EMBEDDING_DIMENSION: int = 512
+    LOCAL_EMBEDDING_CACHE_DIR: str = "./storage/models"
+    LOCAL_EMBEDDING_DEVICE: str = "cpu"
+    LOCAL_KNOWLEDGE_CHUNK_SIZE: int = 1200
+    LOCAL_KNOWLEDGE_CHUNK_OVERLAP: int = 150
+    # 分块器版本标识，用于追踪切片来源；"page-paragraph-v1" 为旧版字符级，"sentence-window-v2" 为句子级滑动窗口
+    LOCAL_KNOWLEDGE_CHUNKER_VERSION: str = "sentence-window-v2"
+    LOCAL_KNOWLEDGE_BM25_WEIGHT: float = 0.3
+    LOCAL_KNOWLEDGE_VECTOR_WEIGHT: float = 0.7
+    LOCAL_KNOWLEDGE_SNIPPET_SIZE: int = 800
     RAG_RETRIEVAL_LIMIT: int = 5
     RAG_RETRIEVAL_MIN_SCORE: float = 0.65
     RAG_BACKEND: str = "iflytek_chatdoc"
@@ -86,6 +98,12 @@ class Settings(BaseSettings):
     MODEL_GATEWAY_FAILURE_THRESHOLD: int = 3
     MODEL_GATEWAY_HEALTH_CHECK_INTERVAL_SECONDS: int = 600
     MODEL_GATEWAY_HEALTH_COOLDOWN_SECONDS: int = 300
+
+    # 代码沙箱：后端转发到 Node + Pyodide 微服务执行用户代码
+    SANDBOX_SERVICE_URL: str = "http://127.0.0.1:8003"
+    SANDBOX_EXECUTION_TIMEOUT_SECONDS: float = 10.0
+    SANDBOX_MAX_CODE_BYTES: int = 64 * 1024
+    SANDBOX_RATE_LIMIT_PER_MINUTE: int = 20
 
     # 文档解析/向量化由讯飞 ChatDoc 云端完成（PDF / TXT / MD）
     RESOURCE_GENERATION_WORKER_ENABLED: bool = True

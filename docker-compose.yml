@@ -30,6 +30,10 @@ services:
       context: ./backend
     container_name: zhike-backend
     env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      DATABASE_URL: postgresql+psycopg://zhike:zhike_password@postgres:5432/zhike_workshop
+      VALKEY_URL: redis://valkey:6379/0
     ports:
       - "8001:8001"
     volumes:

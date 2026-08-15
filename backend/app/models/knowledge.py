@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from pgvector.sqlalchemy import Vector
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
 
@@ -112,6 +113,8 @@ class DocumentChunk(Base, UUIDMixin, TimestampMixin):
     chunker_version: Mapped[str | None] = mapped_column(String(120), index=True)
     embedding_model: Mapped[str] = mapped_column(String(120), default="bge-m3")
     embedding_dim: Mapped[int] = mapped_column(Integer, default=1024)
+    # 当前本地 BGE 方案固定使用 512 维；云端 ChatDoc 仍使用原有链路。
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(512), nullable=True)
     anchor_json: Mapped[dict] = mapped_column(JSONB, default=dict)
     quality_score: Mapped[float] = mapped_column(default=0.0)
     quality_rule_version: Mapped[str] = mapped_column(String(64), default="quality-v1", index=True)
