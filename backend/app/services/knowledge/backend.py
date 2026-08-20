@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.schemas.common import Citation
 from app.services.knowledge.iflytek.retrieval_adapter import IflytekRetrievalAdapter
+from app.services.knowledge.local_knowledge import LocalKnowledgeService
 
 
 class RetrievalBackend(Protocol):
@@ -43,6 +44,17 @@ class RetrievalBackend(Protocol):
             具体实现可能访问外部服务、数据库或本地索引；失败时按实现层异常向上抛出。
         """
         ...
+
+
+class LocalPgVectorRetrievalBackend:
+    """基于本地切片和 pgvector 的检索后端。"""
+
+    def __init__(self, db: Session) -> None:
+        self.service = LocalKnowledgeService(db)
+
+    async def search(self, course_slug: str, query: str, concept_id: str | None = None, limit: int | None = None, document_id: str | None = None) -> list[Citation]:
+        _ = concept_id
+        return self.service.search(course_slug, query, limit or settings.RAG_RETRIEVAL_LIMIT, document_id)
 
 
 class IflytekChatDocRetrievalBackend:
@@ -108,6 +120,8 @@ def get_retrieval_backend(db: Session) -> RetrievalBackend:
     副作用/失败:
         当 RAG_BACKEND 不是 iflytek_chatdoc 时抛出 RuntimeError；创建实例本身不发起检索请求。
     """
-    if settings.RAG_BACKEND != "iflytek_chatdoc":
-        raise RuntimeError("仅支持 RAG_BACKEND=iflytek_chatdoc；文档解析与向量检索均由讯飞 ChatDoc 云端完成。")
-    return IflytekChatDocRetrievalBackend(db)
+    if settings.RAG_BACKEND == "local_pgvector":
+        return LocalPgVectorRetrievalBackend(db)
+    if settings.RAG_BACKEND == "iflytek_chatdoc":
+        return IflytekChatDocRetrievalBackend(db)
+    raise RuntimeError(f"不支持的 RAG_BACKEND：{settings.RAG_BACKEND}")

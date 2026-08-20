@@ -10,6 +10,10 @@ body {
   font-family: var(--font-sans);
   background: #eef4f1;
   color: #0f172a;
+  /* 启用字体抗锯齿，消除高 DPI 显示器上的文字发虚 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 #root {

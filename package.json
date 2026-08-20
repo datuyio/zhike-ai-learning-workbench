@@ -1,8 +1,0 @@
-{
-  "devDependencies": {
-    "jiti": "^2.7.0"
-  },
-  "dependencies": {
-    "@monaco-editor/react": "^4.7.0"
-  }
-}

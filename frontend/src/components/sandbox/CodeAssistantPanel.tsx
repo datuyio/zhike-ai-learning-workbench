@@ -12,7 +12,7 @@ interface CodeAssistantPanelProps {
   code?: string;
 }
 
-export function CodeAssistantPanel({ code }: CodeAssistantPanelProps) {
+export function CodeAssistantPanel({ code }: CodeAssistantPanelProps): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',

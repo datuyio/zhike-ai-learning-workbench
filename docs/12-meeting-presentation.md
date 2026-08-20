@@ -315,7 +315,7 @@
 ## 常见问题
 
 **Q：开发环境怎么搭建？**
-A：README + docs/12-team-onboarding-guide.md 有详细步骤。
+A：README + docs/12b-team-onboarding-guide.md 有详细步骤。
 
 **Q：遇到技术问题找谁？**
 A：后端问题找队员b/副队长d，前端问题找队员c/队员e，架构问题找队长。

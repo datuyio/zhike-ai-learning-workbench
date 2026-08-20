@@ -40,12 +40,14 @@ async def authenticate_websocket(websocket: WebSocket, db: Session) -> CurrentUs
         if not current_user:
             await _reject_websocket(websocket, "登录状态已失效，请重新登录")
             return None
-        await websocket.accept()
-        await websocket.send_json({"type": "auth_ok"})
+        if websocket.client_state == WebSocketState.CONNECTING:
+            await websocket.accept()
+        await ws_send_json(websocket, {"type": "auth_ok"})
         return current_user
 
-    await websocket.accept()
-    await websocket.send_json({"type": "auth_required"})
+    if websocket.client_state == WebSocketState.CONNECTING:
+        await websocket.accept()
+    await ws_send_json(websocket, {"type": "auth_required"})
 
     try:
         raw_payload = await asyncio.wait_for(websocket.receive_json(), timeout=10.0)

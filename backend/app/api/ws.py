@@ -22,7 +22,7 @@ from app.schemas.ai import AiMessageRequest
 from app.services.agent.workflow import AgentWorkflow, is_general_learning
 from app.services.ai.orchestrator import AiOrchestratorService
 from app.services.onboarding.service import OnboardingService
-from app.services.resource.progress_events import resource_task_progress_channel
+from app.services.resource.progress_events import redis_progress_configured, resource_task_progress_channel
 from app.services.resource.repository import ResourceRepository
 
 ws_router = APIRouter()
@@ -270,6 +270,15 @@ async def resource_generation_progress(websocket: WebSocket, task_id: str) -> No
             return
     finally:
         db.close()
+
+    if not redis_progress_configured():
+        await _poll_resource_progress_db(
+            websocket,
+            task_id,
+            current_user.id,
+            is_admin=current_user.role == "admin",
+        )
+        return
 
     redis_client: redis.Redis | None = None
     pubsub: redis.client.PubSub | None = None

@@ -17,7 +17,7 @@ interface AgentTracePanelProps {
   onClose: () => void;
 }
 
-export function AgentTracePanel({ sessionId, isOpen, onClose }: AgentTracePanelProps) {
+export function AgentTracePanel({ sessionId, isOpen, onClose }: AgentTracePanelProps): JSX.Element | null {
   const [traces, setTraces] = useState<AgentTrace[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());

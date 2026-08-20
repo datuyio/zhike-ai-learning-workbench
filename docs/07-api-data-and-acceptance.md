@@ -36,6 +36,7 @@ PATCH /api/v1/auth/me
 POST  /api/v1/auth/logout
 GET   /api/v1/me/courses
 GET   /api/v1/courses
+GET   /api/v1/courses/with-knowledge
 GET   /api/v1/courses/{course_id}
 GET   /api/v1/me/current-course
 PUT   /api/v1/me/current-course
@@ -44,13 +45,14 @@ GET   /api/v1/courses/{course_id}/concepts
 
 关键行为：
 
-* 注册需要邮箱、密码和显示名称；服务端使用 Argon2id 保存新密码哈希，并兼容早期账号的旧哈希校验。
+* 注册需要邮箱、密码和显示名称；可选携带 `role` 字段（`student` 或 `ta`），默认为学生，用于登录后进入对应角色工作台。
 * 登录成功后写入服务端会话令牌，`GET /auth/me` 用于恢复当前用户；前端仅在内存和 `sessionStorage` 保存当前会话 token，并会迁移清理旧版 `localStorage` token。
 * `PATCH /auth/me` 当前只允许用户修改显示名称，不允许普通用户自行修改角色。
 * `POST /auth/logout` 撤销当前令牌；没有令牌时仍返回幂等成功。
 * WebSocket 连接不应把 token 放入 URL 查询参数；客户端应在收到 `auth_required` 后发送 `auth` 帧完成鉴权。
 * 生产环境建议继续升级为 `HttpOnly + Secure + SameSite` Cookie 或短期 WebSocket 票据，避免长期 bearer token 暴露在前端可读存储中。
 * 课程列表与当前课程接口决定学习路径、资源大厅、课程资料问答和画像的课程上下文。
+* `GET /api/v1/courses/with-knowledge` 只返回当前用户可访问且已具备可检索知识库的课程；管理员可看到全部就绪课程，学生按有效选课记录过滤，`course_id` 返回稳定 UUID。
 
 ### 2.1 统一 AI 消息入口
 
@@ -265,9 +267,9 @@ ModelCallLog.meta_json.predicted_intent / expected_intent / comment
 ```text
 用户显式选择“课程资料问答”
   ↓
-校验 course_id、课程访问权限、CloudRagProvider、远端知识库状态
+校验 course_id、课程访问权限和当前 RAG 后端状态
   ↓
-CloudRagProvider 检索 / 文档问答
+CloudRagProvider 检索；`RAG_BACKEND=local_pgvector` 时由本地 PGVector 混合检索
   ↓
 返回 answer + citations
 ```
@@ -275,7 +277,8 @@ CloudRagProvider 检索 / 文档问答
 约束：
 
 * 必须有 `course_id`。
-* 必须有可用 CloudRagProvider 和已完成向量化的课程资料。
+* `iflytek_chatdoc` 模式必须有可用 CloudRagProvider；`local_pgvector` 模式必须有可检索本地文档和向量切片。
+* `courses/{course_id}/ai-context` 会按后端返回 `knowledge_ready`、`file_ids_count`、`qa_mode` 和 `rag_backend`，前端据此启用或禁用课程资料问答。
 * 不创建 ResourceTaskCard。
 * 不打开 ArtifactCanvas。
 * 若未命中文档，应根据课程绑定策略决定是否允许回退普通 Chat，并清晰提示引用不足。
@@ -672,6 +675,79 @@ GET  /api/v1/courses/{course_id}/extracted-qa/{qa_id}
 
 ---
 
+### 2.14 学习效果评估报告
+
+学习效果评估报告用于 `/assessment/report` 聚合学习行为、画像、测验评分和资源使用数据，生成结构化评估报告，包含总体评分、维度评分和进步趋势。
+
+```http
+GET /api/v1/assessment/report?user_id={id}&course_id={id}
+```
+
+查询参数：
+
+| 参数 | 说明 |
+|---|---|
+| `user_id` | 可选，目标用户 external_id；不传则默认当前登录用户。 |
+| `course_id` | 可选，按课程过滤评估数据。 |
+
+关键行为：
+
+* 报告聚合 4 个数据源：`ProfileDimension`/`ConceptMastery`（知识掌握度）、`Assessment`（测验表现）、`LearningEvent`/`StudentLearningEvent`（学习参与度）、`Resource`（资源利用）。
+* 4 个维度按权重（35%/30%/20%/15%）加权计算总体评分 0-100，并映射为优秀/良好/中等/待加强等级。
+* 进步趋势按天聚合最近 4 周的测验评分，返回按时间顺序排列的数据点。
+* 薄弱点来自画像维度中低于 60 分的掌握度指标，以及 ConceptMastery 中低于 60 分的知识点。
+* 建议按薄弱点和低分维度自动生成，涵盖复习、练习、参与度和资源利用等方面。
+* 普通用户只能查看自己的报告；查询他人报告需管理员或助教权限。
+
+报告结构（`LearningReportResponse`）：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `user_id` | string | 用户 external_id |
+| `course_id` | string? | 课程 ID |
+| `course_title` | string? | 课程标题 |
+| `overall_score` | int | 总体评分 0-100 |
+| `overall_level` | string | 总体等级 |
+| `dimensions` | ReportDimensionScore[] | 4 个维度评分 |
+| `progress_trend` | ReportTrendPoint[] | 进步趋势数据点 |
+| `weak_points` | string[] | 薄弱知识点/维度列表 |
+| `recommendations` | string[] | 改进建议列表 |
+| `assessment_count` | int | 参与测评次数 |
+| `event_count` | int | 学习行为事件总数 |
+| `generated_at` | datetime | 报告生成时间 |
+
+验收标准：返回完整的评估报告 JSON，包含总体评分、至少 4 个维度评分和进步趋势数据。
+
+---
+
+
+### 2.15 学生端助教互动（班级、作业、测验、通知）
+
+助教创建的班级、布置的作业与测验会同步到学生端，学生凭邀请码入班、在线作答、提交并接收助教提醒。所有接口要求登录用户为学生身份。
+
+```http
+GET    /api/v1/ta-student/classes
+POST   /api/v1/ta-student/classes/join
+DELETE /api/v1/ta-student/classes/{class_id}/leave
+GET    /api/v1/ta-student/assignments
+POST   /api/v1/ta-student/assignments/{assignment_id}/submit
+GET    /api/v1/ta-student/quizzes
+GET    /api/v1/ta-student/quizzes/{quiz_id}
+POST   /api/v1/ta-student/quizzes/{quiz_id}/submit
+GET    /api/v1/ta-student/notifications
+POST   /api/v1/ta-student/notifications/{notification_id}/read
+```
+
+关键行为：
+
+* 班级列表返回已加入班级的名称、教师姓名、邀请码、班内人数与入班时间。
+* 学生凭 8 位邀请码加入班级；邀请码大小写不敏感，重复加入幂等返回，满员班级拒绝加入。
+* 学生退出班级幂等，教师端可再次通过邀请码或其他方式将学生加入班级。
+* 作业列表返回已发布作业及当前学生的提交状态（`submitted`、`attempt_number`、`submitted_at`）。
+* 作业提交内容为文本作答，支持重复提交，后端记录每次提交的 attempt_number 与提交时间。
+* 测验题目详情接口只返回题干、题型、选项与分值，不返回正确答案；提交后即时判分并返回得分。
+* 通知列表返回 `unread_count` 与逐条已读状态，标记已读幂等。
+
 ## 3. 管理侧 API
 
 ### 3.1 知识大本营
@@ -731,6 +807,19 @@ DELETE /api/v1/admin/model-providers/logs
 GET    /api/v1/admin/model-providers/traces/{trace_id}
 GET    /api/v1/admin/model-providers/usage-stats
 ```
+
+学生端个人模型覆盖：
+
+```http
+GET    /api/v1/me/model-override
+PUT    /api/v1/me/model-override
+DELETE /api/v1/me/model-override
+POST   /api/v1/me/model-override/test
+```
+
+- 普通学生可读取、保存、删除和测试自己的聊天模型覆盖配置。
+- 覆盖启用后，普通对话优先使用个人供应商；未启用时仍使用管理员在网关中心维护的默认模型。
+- API Key 使用项目加密密钥托管，前端不回传已保存的明文密钥；测试接口只对传入的草稿配置进行连通性检测，不写数据库。
 
 Intent Router 配置接口：
 
@@ -976,6 +1065,33 @@ POST /api/v1/webhooks/chatdoc/status
 * 失败错误码和 traceId。
 
 ---
+
+
+### 3.8 助教端（TA Portal）
+
+助教端 API 统一挂载在 `/api/v1/ta` 前缀下，要求登录用户角色为 `ta`。
+
+| 分组 | 前缀 | 能力 |
+|---|---|---|
+| 工作台 | `GET /ta/dashboard` | 班级、作业、测验、预警与待办聚合统计。 |
+| 班级管理 | `/ta/classes` | 班级增删改、邀请码生成/重置、学生增删、名单读取、成绩 CSV 导出。 |
+| 作业管理 | `/ta/assignments` | 创建、编辑、发布、关闭作业，查看提交列表。 |
+| 批改中心 | `/ta/grading` | 批改列表、手动评分、AI 批改（文本/图片/流式）、批改统计与导出。 |
+| 测验管理 | `/ta/quizzes` | 创建、编辑、发布、关闭测验，查看统计与作答明细。 |
+| 备课助手 | `/ta/lesson-plans` | AI 生成教案（同步/流式）、编辑、发布。 |
+| 学情诊断 | `/ta/diagnosis` | 班级对比、学生趋势/雷达、热力图、进度、薄弱点与教学建议。 |
+| 预警管理 | `/ta/alerts` | 预警列表、干预、解决、干预动作与 AI 生成预警。 |
+| 资源审核 | `/ta/resources` | 待审资源列表、通过、驳回。 |
+| 公告管理 | `/ta/announcements` | 创建、编辑、删除、置顶、撤回。 |
+
+关键行为：
+
+* 助教创建作业/测验后默认草稿状态，发布后才对学生可见；关闭后学生不可再提交。
+* 手动评分与 AI 批改均写入 `ta_grading_records`；AI 批改失败时返回明确错误，不伪造分数。
+* 干预预警会向学生生成站内通知，学生可在 `/notifications` 查看并标记已读。
+* 班级成绩导出为 CSV（UTF-8 BOM），可直接用 Excel 打开。
+* 创建班级时服务端生成 8 位唯一邀请码（字符集剔除易混淆字符）；`POST /ta/classes/{class_id}/regenerate-code` 重置后旧码立即失效。
+* 学情诊断聚合学习事件与概念掌握度，计算班级平均分、薄弱知识点与趋势。
 
 ## 4. 统一错误、权限与日志
 
@@ -1596,6 +1712,18 @@ ModelCallLog
 
 ---
 
+
+### 7.4 助教端验收
+
+* 助教登录后可在 `/ta` 看到班级统计、趋势图、待办与预警。
+* 作业闭环：创建 → 发布 → 学生提交 → 手动/AI 批改 → 学生查看成绩。
+* 测验闭环：创建（客观题）→ 发布 → 学生作答 → 即时判分 → 成绩统计。
+* 预警闭环：生成预警 → 干预 → 学生收到通知 → 已读 → 解决。
+* 公告闭环：创建 → 置顶 → 学生可见 → 撤回。
+* 班级管理支持班级增删改、学生增删与成绩 CSV 导出。
+* 备课助手可生成教案草稿，编辑后发布。
+* 学生端 `/assignments`、`/quizzes`、`/notifications` 三个页面数据与助教操作实时一致。
+
 ## 8. 测试验收清单
 
 ### 8.1 普通 Chat
@@ -1657,7 +1785,9 @@ ModelCallLog
 | 后端资源生成 | `pytest backend/tests/test_resource_generation_task.py` | 验证任务创建、重试、状态和引用。 |
 | 后端画像 | `pytest backend/tests/test_learning_profile_repository.py backend/tests/test_profile_extractor.py` | 验证画像证据和纠偏。 |
 | 后端知识库 | `pytest backend/tests/test_knowledge_upload_policy.py backend/tests/test_native_chunks_routes.py` | 验证上传策略和分段接口。 |
-| 前端构建 | `npm run build`（在 `frontend` 目录） | 验证类型和页面构建。 |
+| 本地知识库回归 | `pytest backend/tests/test_local_knowledge_markdown.py backend/tests/test_knowledge_regressions.py` | 验证 Markdown 解析、课程就绪、先修关系、权限过滤和本地检索。 |
+| 前端全量测试 | `pnpm test`（在 `frontend` 目录） | 验证 API 契约、组件逻辑和前端治理规则。 |
+| 前端构建 | `pnpm build`（在 `frontend` 目录） | 验证 TypeScript 和生产构建。 |
 | 全量守卫 | `make guard` | 合并前优先执行后端静态检查和关键 smoke tests。 |
 
 ---
@@ -1693,3 +1823,22 @@ ArtifactCanvas 展示正文、引用、画像摘要和版本
 ```
 
 该路径覆盖用户侧、管理侧、AI 编排、课程资料、资源生成、画像、审核和运维监控，是项目验收的最小完整闭环。
+
+## T-B-07 本地知识库验收补充
+
+- `RAG_BACKEND=local_pgvector` 时复用现有知识库上传和检索路由，不删除 ChatDoc 路由或配置。
+- 当前已导入 7 条课程主线共 1165 份本地文档、24167 个可检索切片。
+- `GET /api/v1/courses/with-knowledge` 必须返回 7 门已就绪课程；学生结果应受选课范围限制，管理员可返回全部。
+- `data_system` 课程查询“高可用系统”应返回 `retrieval_mode=local_pgvector`、相关片段、页码和本地切片 ID。
+- 本地解析支持 PDF、Markdown、MDX 和纯文本；扫描版 PDF 仍需 OCR。
+- 本地向量为 BGE-small-zh-v1.5 的 512 维；模型权重不进入仓库，首次运行前确认 `LOCAL_EMBEDDING_CACHE_DIR`。
+- Markdown 标题路径按数据库列宽安全截断，完整路径保留在 JSON 元数据中。
+- 前端生产构建、`tsc --noEmit`、Vitest 全量测试和后端 Ruff 检查均需通过后再合并。
+
+### 历史验收要点
+
+- RAG_BACKEND=local_pgvector 时复用现有知识库上传和检索路由，不删除 ChatDoc 路由或配置。
+- 上传 PDF 后应完成 PyMuPDF 解析、保留页码的文本分块、512 维本地向量化、PGVector 入库。
+- 输入明确问题后，检索响应必须返回 `retrieval_mode=local_pgvector`、相关片段、页码和本地切片 ID。
+
+- 模型权重不进入仓库；首次运行前由操作者确认下载目录，Windows 推荐配置到 D 盘。

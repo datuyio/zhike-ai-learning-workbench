@@ -11,14 +11,13 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models import AdminAuditLog, Course, CourseConcept, Document, DocumentChunk, DocumentPage, ModelProvider, RagIntegrationConfig, User
+from app.models import AdminAuditLog, Course, CourseConcept, CourseMembership, Document, DocumentChunk, DocumentPage, ModelProvider, RagIntegrationConfig, User
 from app.services.knowledge.ingestion_status_builder import (
     build_ingestion_stages,
     compute_ingestion_progress,
     ingestion_flags,
     resolve_chatdoc_file_status,
 )
-from app.services.knowledge.iflytek.status_labels import normalize_chatdoc_file_status
 
 
 logger = logging.getLogger(__name__)
@@ -456,6 +455,8 @@ class KnowledgeRepository:
     def _chatdoc_document_fields(self, document: Document, course: Course | None = None) -> dict:
         meta = document.meta_json or {}
         chatdoc_status = meta.get("chatdoc_status") or {}
+        from app.services.knowledge.iflytek.status_labels import normalize_chatdoc_file_status
+
         file_status = normalize_chatdoc_file_status(
             meta.get("chatdoc_file_status")
             or chatdoc_status.get("fileStatus")
@@ -577,7 +578,11 @@ class KnowledgeRepository:
             "visual_vector_status": document.visual_vector_status,
             "review_status": document.review_status,
             "publish_readiness": document.publish_readiness,
-            "chunk_count": int((document.meta_json or {}).get("chatdoc_chunk_total") or 0),
+            "chunk_count": int(
+                (document.meta_json or {}).get("chatdoc_chunk_total")
+                or (document.meta_json or {}).get("local_chunk_total")
+                or 0
+            ),
             "page_count": 0,
             "source_type": document.source_type,
             "created_at": document.created_at.isoformat() if document.created_at else None,
@@ -651,22 +656,40 @@ class KnowledgeRepository:
             ],
         }
 
-    def get_courses_with_knowledge(self) -> dict:
+    def get_courses_with_knowledge(self, user_external_id: str | None = None) -> dict:
         """返回已经具备可检索知识库文档的课程 ID 集合。"""
 
-        rows = (
-            self.db.execute(
-                select(Document.course_id)
-                .where(
-                    Document.deleted_at.is_(None),
-                    Document.parse_status == "completed",
-                    Document.vector_status == "ready",
-                )
-                .distinct()
+        stmt = (
+            select(Document.course_id)
+            .where(
+                Document.deleted_at.is_(None),
+                or_(Document.parse_status == "completed", Document.parse_status == "parsed"),
+                Document.vector_status == "ready",
             )
-            .scalars()
-            .all()
+            .distinct()
         )
+        if settings.RAG_BACKEND == "local_pgvector":
+            stmt = (
+                stmt
+                .where(Document.source_type == "local_pgvector")
+                .join(DocumentChunk, DocumentChunk.document_id == Document.id)
+                .where(
+                    DocumentChunk.lifecycle_status == "active",
+                    DocumentChunk.embedding_status == "ready",
+                    DocumentChunk.embedding.is_not(None),
+                )
+            )
+        if user_external_id:
+            user = self._user(user_external_id)
+            if not user:
+                return {"course_ids": []}
+            # 管理员可查看全部已就绪课程；普通用户只返回有效选课记录。
+            if user.role_code != "admin":
+                stmt = stmt.join(CourseMembership, CourseMembership.course_id == Document.course_id).where(
+                    CourseMembership.user_id == user.id,
+                    CourseMembership.status == "active",
+                )
+        rows = self.db.execute(stmt).scalars().all()
         return {"course_ids": [str(row) for row in rows]}
 
     @staticmethod

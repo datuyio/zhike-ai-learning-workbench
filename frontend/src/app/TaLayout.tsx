@@ -1,8 +1,9 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileText, CheckSquare, BarChart3, Users,
-  BookOpen, Bell,
+  BookOpen, Bell, LogOut,
 } from "lucide-react";
+import { useSessionStore } from "../stores/session.store";
 
 const navItems = [
   { to: "/ta/dashboard", label: "工作台", icon: LayoutDashboard },
@@ -18,6 +19,15 @@ const navItems = [
  * 助教端工作台布局：左侧导航 + 顶部栏 + 主内容区。
  */
 export function TaLayout(): JSX.Element {
+  const navigate = useNavigate();
+  const user = useSessionStore((state) => state.user);
+  const clearSession = useSessionStore((state) => state.clearSession);
+
+  function handleLogout(): void {
+    clearSession();
+    navigate("/login", { replace: true });
+  }
+
   return (
     <div className="flex h-dvh bg-zinc-50">
       {/* 左侧窄导航 */}
@@ -65,9 +75,12 @@ export function TaLayout(): JSX.Element {
       <main className="flex flex-1 flex-col overflow-hidden">
         {/* 顶部栏 */}
         <header className="flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-6">
-          <h1 className="text-sm font-medium text-zinc-500">助教工作台</h1>
+          <h1 className="text-sm font-medium text-zinc-500">智课 · 助教端</h1>
           <div className="flex items-center gap-3 text-xs text-zinc-400">
-            <span>智课 · 助教端</span>
+            <span>{user?.name ?? '助教'}</span>
+            <button type="button" className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700" onClick={handleLogout}>
+              <LogOut size={13} /> 退出登录
+            </button>
           </div>
         </header>
 

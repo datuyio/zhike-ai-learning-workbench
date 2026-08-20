@@ -20,6 +20,7 @@ from app.core.config import settings
 from app.core.security import decrypt_secret
 from app.core.tracing import get_trace_id
 from app.models import Course, ModelCallLog, ModelProvider, ModelProviderHealth
+from app.services.model_gateway.http_client import model_gateway_client_kwargs
 
 
 IMAGE_PROVIDER_TYPES = {"image", "image_generation"}
@@ -421,7 +422,7 @@ class ImageGenerationService:
         request_body = {key: value for key, value in request_body.items() if value is not None}
         headers = {"Authorization": _bearer_auth_header(config.api_key or ""), "Content-Type": "application/json"}
         started = time.perf_counter()
-        async with httpx.AsyncClient(timeout=settings.RESOURCE_IMAGE_GENERATION_TIMEOUT_SECONDS) as client:
+        async with httpx.AsyncClient(**model_gateway_client_kwargs(config.base_url, settings.RESOURCE_IMAGE_GENERATION_TIMEOUT_SECONDS)) as client:
             response = await client.post(_image_generations_url(config.base_url), headers=headers, json=request_body)
             response.raise_for_status()
             data = response.json()
@@ -465,7 +466,7 @@ class ImageGenerationService:
         if payload.reference_paths:
             request_body["reference_images"] = payload.reference_paths
         headers = {"Authorization": _bearer_auth_header(config.api_key or ""), "Content-Type": "application/json"}
-        async with httpx.AsyncClient(timeout=settings.RESOURCE_IMAGE_GENERATION_TIMEOUT_SECONDS) as client:
+        async with httpx.AsyncClient(**model_gateway_client_kwargs(config.base_url, settings.RESOURCE_IMAGE_GENERATION_TIMEOUT_SECONDS)) as client:
             response = await client.post(endpoint, headers=headers, json=request_body)
             response.raise_for_status()
             queued = response.json()
@@ -500,7 +501,7 @@ class ImageGenerationService:
     async def _generate_custom_sync(self, config: ImageProviderConfig, payload: ImageGenerationInput) -> GeneratedImage:
         request_body = self._custom_request_body(config, payload)
         headers = {"Authorization": _bearer_auth_header(config.api_key or ""), "Content-Type": "application/json"}
-        async with httpx.AsyncClient(timeout=settings.RESOURCE_IMAGE_GENERATION_TIMEOUT_SECONDS) as client:
+        async with httpx.AsyncClient(**model_gateway_client_kwargs(config.base_url, settings.RESOURCE_IMAGE_GENERATION_TIMEOUT_SECONDS)) as client:
             response = await client.post(config.base_url, headers=headers, json=request_body)
             response.raise_for_status()
             data = response.json()
@@ -509,7 +510,7 @@ class ImageGenerationService:
     async def _generate_custom_async(self, config: ImageProviderConfig, payload: ImageGenerationInput) -> GeneratedImage:
         request_body = self._custom_request_body(config, payload)
         headers = {"Authorization": _bearer_auth_header(config.api_key or ""), "Content-Type": "application/json"}
-        async with httpx.AsyncClient(timeout=settings.RESOURCE_IMAGE_GENERATION_TIMEOUT_SECONDS) as client:
+        async with httpx.AsyncClient(**model_gateway_client_kwargs(config.base_url, settings.RESOURCE_IMAGE_GENERATION_TIMEOUT_SECONDS)) as client:
             response = await client.post(config.base_url, headers=headers, json=request_body)
             response.raise_for_status()
             queued = response.json()
@@ -616,7 +617,7 @@ class ImageGenerationService:
 
 async def download_image_bytes(url: str) -> tuple[bytes, str]:
     """下载供应商返回的远程图片，用于落入本地对象存储。"""
-    async with httpx.AsyncClient(timeout=settings.RESOURCE_IMAGE_GENERATION_TIMEOUT_SECONDS) as client:
+    async with httpx.AsyncClient(**model_gateway_client_kwargs(url, settings.RESOURCE_IMAGE_GENERATION_TIMEOUT_SECONDS)) as client:
         response = await client.get(url)
         response.raise_for_status()
         content_type = response.headers.get("content-type") or "image/png"

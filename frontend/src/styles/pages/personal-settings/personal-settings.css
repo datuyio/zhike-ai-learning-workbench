@@ -1989,3 +1989,55 @@
 .profile-orbit-tag--4 { --orbit-distance: 350px; animation-delay: -5s; color: #fde68a; }
 .profile-orbit-tag--5 { --orbit-distance: 410px; animation-delay: -13s; color: #bfdbfe; }
 .profile-orbit-tag--6 { --orbit-distance: 470px; animation-delay: -17s; color: #ddd6fe; }
+
+.personal-settings-model-override {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--page-inner-border);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.personal-settings-model-override__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.personal-settings-model-override__head strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--settings-ink);
+  font-size: 15px;
+}
+
+.personal-settings-model-override__head p {
+  margin: 0;
+  color: var(--settings-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.personal-settings-model-override__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.personal-settings-model-override__clear {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--settings-muted);
+  font-size: 13px;
+}
+
+.personal-settings-model-override__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

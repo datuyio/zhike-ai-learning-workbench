@@ -42,6 +42,9 @@ def _consume_fixed_window(key: str, *, limit: int, window_seconds: int) -> tuple
     """返回是否允许请求以及需要等待的秒数。"""
     if limit <= 0:
         return True, 0
+    if not settings.VALKEY_URL.strip():
+        # Redis 未配置时跳过限流，保证本地无 Redis 的演示环境仍能正常对话。
+        return True, 0
     try:
         client = _redis_client()
         count = int(client.incr(key))
@@ -54,7 +57,7 @@ def _consume_fixed_window(key: str, *, limit: int, window_seconds: int) -> tuple
         if count <= limit:
             return True, 0
         return False, max(1, ttl)
-    except RedisError:
+    except (RedisError, ValueError):
         key_parts = key.split(":")
         key_scope = ":".join(key_parts[:2]) if len(key_parts) >= 2 else "rate"
         key_hash = hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]

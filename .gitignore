@@ -46,11 +46,32 @@ frontend/playwright-report/
 backend/*.log
 .playwright-cli/
 output/
-storage/
-backend/storage/
+storage/*
+!storage/knowledge-sources/
+storage/knowledge-sources/*
+!storage/knowledge-sources/manifest.json
+!storage/knowledge-sources/ai-ml/
+!storage/knowledge-sources/algorithms/
+!storage/knowledge-sources/cs-foundations/
+!storage/knowledge-sources/data-system/
+!storage/knowledge-sources/llm-agents/
+!storage/knowledge-sources/supplement/
+!storage/knowledge-sources/web-engineering/
+backend/storage/*
+!backend/storage/models/
+backend/storage/models/*
+!backend/storage/models/models--BAAI--bge-small-zh-v1.5/
+backend/storage/models/models--BAAI--bge-small-zh-v1.5/.no_exist/
 
 # OS / editor
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
+
+# Temporary files
+temp_*
+tmp_*
+fix_bom_*.py
+fix_scaffold.py
+*.tsbuildinfo

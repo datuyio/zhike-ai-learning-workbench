@@ -119,6 +119,16 @@ type IdentityFormState = {
   name: string;
 };
 
+type ModelOverrideFormState = {
+  provider: string;
+  base_url: string;
+  api_key: string;
+  chat_model: string;
+  embedding_model: string;
+  enabled: boolean;
+  clear_api_key: boolean;
+};
+
 type PetOptionCardProps = {
   pet: CodexPetDefinition;
   selected: boolean;
@@ -579,9 +589,23 @@ export function PersonalSettingsPage(): JSX.Element {
     enabled: canUseAdminEndpoints,
     staleTime: 60_000,
   });
+  const modelOverrideQuery = useQuery({
+    queryKey: ['user-model-override'],
+    queryFn: api.userModelOverride,
+    staleTime: 60_000,
+  });
   const settings = settingsQuery.data;
   const courses = coursesQuery.data?.items ?? [];
   const defaultProvider = useMemo(() => resolveDefaultChatProvider(providersQuery.data?.items ?? []), [providersQuery.data?.items]);
+  const [modelOverrideForm, setModelOverrideForm] = useState<ModelOverrideFormState>({
+    provider: '',
+    base_url: '',
+    api_key: '',
+    chat_model: '',
+    embedding_model: '',
+    enabled: false,
+    clear_api_key: false,
+  });
   const roleText = roleLabel[user?.role ?? ''] ?? valueOrEmpty(user?.role);
   const trimmedIdentityName = identityForm.name.trim();
   const isIdentityChanged = trimmedIdentityName !== (user?.name ?? '').trim();
@@ -628,6 +652,20 @@ export function PersonalSettingsPage(): JSX.Element {
   }, [isIdentityEditing, user?.name]);
 
   useEffect(() => {
+    const override = modelOverrideQuery.data;
+    if (!override) return;
+    setModelOverrideForm({
+      provider: override.provider ?? '',
+      base_url: override.base_url ?? '',
+      api_key: '',
+      chat_model: override.chat_model ?? '',
+      embedding_model: override.embedding_model ?? '',
+      enabled: override.enabled,
+      clear_api_key: false,
+    });
+  }, [modelOverrideQuery.data]);
+
+  useEffect(() => {
     function handlePetVisibilityChanged(event: Event): void {
       const eventVisible = (event as CustomEvent<CodexPetVisibilityPayload>).detail?.visible;
       setPetVisible(typeof eventVisible === 'boolean' ? eventVisible : readCodexPetVisible());
@@ -669,6 +707,66 @@ export function PersonalSettingsPage(): JSX.Element {
       queryClient.invalidateQueries({ queryKey: ['model-providers'] });
     },
     onError: (error) => showToast(getApiErrorMessage(error, '连接测试失败。'), 'error'),
+  });
+
+  const saveModelOverrideMutation = useMutation({
+    mutationFn: () => {
+      if (!modelOverrideForm.provider.trim() || !modelOverrideForm.chat_model.trim()) {
+        throw new Error('供应商编码和聊天模型不能为空。');
+      }
+      return api.saveUserModelOverride({
+        provider: modelOverrideForm.provider.trim(),
+        base_url: modelOverrideForm.base_url.trim() || null,
+        api_key: modelOverrideForm.api_key || null,
+        clear_api_key: modelOverrideForm.clear_api_key,
+        chat_model: modelOverrideForm.chat_model.trim(),
+        embedding_model: modelOverrideForm.embedding_model.trim() || null,
+        enabled: modelOverrideForm.enabled,
+      });
+    },
+    onMutate: () => showToast('正在保存个人模型覆盖', 'info'),
+    onSuccess: (result) => {
+      showToast(result.enabled ? '个人模型覆盖已保存并启用' : '个人模型覆盖已保存，尚未启用', 'success');
+      setModelOverrideForm((current) => ({ ...current, api_key: '', clear_api_key: false }));
+      queryClient.invalidateQueries({ queryKey: ['user-model-override'] });
+    },
+    onError: (error) => showToast(getApiErrorMessage(error, '个人模型覆盖保存失败。'), 'error'),
+  });
+
+  const deleteModelOverrideMutation = useMutation({
+    mutationFn: api.deleteUserModelOverride,
+    onMutate: () => showToast('正在移除个人模型覆盖', 'info'),
+    onSuccess: (result) => {
+      showToast(result.status === 'deleted' ? '个人模型覆盖已移除' : '当前没有已保存的个人覆盖', 'success');
+      setModelOverrideForm({
+        provider: '',
+        base_url: '',
+        api_key: '',
+        chat_model: '',
+        embedding_model: '',
+        enabled: false,
+        clear_api_key: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ['user-model-override'] });
+    },
+    onError: (error) => showToast(getApiErrorMessage(error, '个人模型覆盖移除失败。'), 'error'),
+  });
+
+  const testModelOverrideMutation = useMutation({
+    mutationFn: () => {
+      if (!modelOverrideForm.provider.trim() || !modelOverrideForm.chat_model.trim()) {
+        throw new Error('请先填写供应商编码和聊天模型。');
+      }
+      return api.testUserModelOverride({
+        provider: modelOverrideForm.provider.trim(),
+        base_url: modelOverrideForm.base_url.trim() || null,
+        api_key: modelOverrideForm.api_key || null,
+        chat_model: modelOverrideForm.chat_model.trim(),
+      });
+    },
+    onMutate: () => showToast('正在测试个人模型配置', 'info'),
+    onSuccess: (result) => showToast(formatProviderTestNotice(result), result.status === 'passed' ? 'success' : 'error'),
+    onError: (error) => showToast(getApiErrorMessage(error, '个人模型连接测试失败。'), 'error'),
   });
 
   function startIdentityEdit(): void {
@@ -994,6 +1092,113 @@ export function PersonalSettingsPage(): JSX.Element {
                   />
                 }
               />
+              <div className="personal-settings-model-override">
+                <div className="personal-settings-model-override__head">
+                  <div>
+                    <strong>个人模型覆盖</strong>
+                    <p>保存后会优先用于普通对话，未启用时仍使用管理员维护的默认模型。</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={modelOverrideForm.enabled}
+                    className={`personal-settings-switch ${modelOverrideForm.enabled ? 'is-on' : ''}`}
+                    onClick={() => setModelOverrideForm((current) => ({ ...current, enabled: !current.enabled }))}
+                  >
+                    <span className="personal-settings-switch__track" aria-hidden="true">
+                      <span className="personal-settings-switch__thumb" />
+                    </span>
+                    <span>{modelOverrideForm.enabled ? '已启用' : '已停用'}</span>
+                  </button>
+                </div>
+                <div className="personal-settings-model-override__grid">
+                  <label className="personal-settings-field">
+                    <span>供应商编码</span>
+                    <input
+                      value={modelOverrideForm.provider}
+                      maxLength={120}
+                      placeholder="例如 deepseek"
+                      onChange={(event) => setModelOverrideForm((current) => ({ ...current, provider: event.target.value }))}
+                    />
+                  </label>
+                  <label className="personal-settings-field">
+                    <span>聊天模型</span>
+                    <input
+                      value={modelOverrideForm.chat_model}
+                      maxLength={120}
+                      placeholder="例如 deepseek-chat"
+                      onChange={(event) => setModelOverrideForm((current) => ({ ...current, chat_model: event.target.value }))}
+                    />
+                  </label>
+                  <label className="personal-settings-field">
+                    <span>Base URL</span>
+                    <input
+                      value={modelOverrideForm.base_url}
+                      maxLength={500}
+                      placeholder="https://api.deepseek.com"
+                      onChange={(event) => setModelOverrideForm((current) => ({ ...current, base_url: event.target.value }))}
+                    />
+                  </label>
+                  <label className="personal-settings-field">
+                    <span>API Key</span>
+                    <input
+                      type="password"
+                      value={modelOverrideForm.api_key}
+                      maxLength={500}
+                      placeholder={modelOverrideQuery.data?.key_configured ? '已保存密钥，留空保持不变' : '请输入 API Key'}
+                      onChange={(event) => setModelOverrideForm((current) => ({ ...current, api_key: event.target.value }))}
+                    />
+                  </label>
+                  <label className="personal-settings-field">
+                    <span>Embedding 模型</span>
+                    <input
+                      value={modelOverrideForm.embedding_model}
+                      maxLength={120}
+                      placeholder="可选"
+                      onChange={(event) => setModelOverrideForm((current) => ({ ...current, embedding_model: event.target.value }))}
+                    />
+                  </label>
+                </div>
+                {modelOverrideQuery.data?.key_configured && (
+                  <label className="personal-settings-model-override__clear">
+                    <input
+                      type="checkbox"
+                      checked={modelOverrideForm.clear_api_key}
+                      onChange={(event) => setModelOverrideForm((current) => ({ ...current, clear_api_key: event.target.checked }))}
+                    />
+                    <span>移除已保存的 API Key</span>
+                  </label>
+                )}
+                <div className="personal-settings-model-override__actions">
+                  <button
+                    type="button"
+                    className="personal-settings-action personal-settings-action--primary"
+                    disabled={saveModelOverrideMutation.isPending}
+                    onClick={() => saveModelOverrideMutation.mutate()}
+                  >
+                    {saveModelOverrideMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                    <span>{saveModelOverrideMutation.isPending ? '保存中' : '保存'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="personal-settings-action"
+                    disabled={testModelOverrideMutation.isPending}
+                    onClick={() => testModelOverrideMutation.mutate()}
+                  >
+                    {testModelOverrideMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <PlugZap size={16} />}
+                    <span>{testModelOverrideMutation.isPending ? '测试中' : '测试连接'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="personal-settings-action"
+                    disabled={deleteModelOverrideMutation.isPending}
+                    onClick={() => deleteModelOverrideMutation.mutate()}
+                  >
+                    {deleteModelOverrideMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <Eraser size={16} />}
+                    <span>{deleteModelOverrideMutation.isPending ? '移除中' : '移除'}</span>
+                  </button>
+                </div>
+              </div>
             </section>
 
             <section id="settings-pet" className={`personal-settings-section ${activeSectionId === 'settings-pet' ? 'is-active' : ''}`}>

@@ -11,7 +11,7 @@ import {
   buildSuggestedActionResourcePayload,
   type DiagramPackImageOptions,
 } from '../utils/resource-generation-payload';
-import { mapTaskStatus, upsertResourceTaskMessage } from '../utils/resource-task-messages';
+import { upsertResourceTaskMessage } from '../utils/resource-task-messages';
 import { explainResourceError, formatErrorContent } from '../utils/workspace-errors';
 import {
   buildResourceCommandTraceEvents,
@@ -344,9 +344,16 @@ export function useWorkspaceResourceCommandSubmit({
         resourceScope: 'course',
         courseBound: true,
         courseEvidenceRequired: true,
+        taskStep: '排队中',
         createdAt: Date.now(),
       }),
     ]);
+    useUiStore.getState().openResourcePreview({
+      messageId: assistantMessageId,
+      resourceType: action.resource_type,
+      resourceTitle: action.label,
+      prompt: action.reason,
+    });
 
     try {
       const task = await mutateResource(buildSuggestedActionResourcePayload({
@@ -369,18 +376,53 @@ export function useWorkspaceResourceCommandSubmit({
         type: action.resource_type,
         pathNode: requestContext.path_node_id ?? undefined,
       });
+      const taskPatch = buildSubmittedResourceTaskPatch({
+        id: assistantMessageId,
+        task,
+        resourceScope: 'course',
+        isCourseMode: true,
+        resourceEvidenceEnabled: true,
+        resourceType: action.resource_type,
+      });
       updateSessionMessages(sessionId, (items) =>
-        upsertResourceTaskMessage(items, task.task_id, {
-          id: assistantMessageId,
-          taskId: task.task_id,
-          pipelineRunId: task.task_id,
-          taskStatus: mapTaskStatus(task.status),
-          taskProgress: task.progress,
-        }),
+        upsertResourceTaskMessage(items, task.task_id, taskPatch),
       );
-      onToast('任务已进入队列', 'info');
+      if (taskPatch.taskStatus === 'failed') {
+        const explained = explainTaskFailure(task.error_message, {
+          hasCourse: true,
+          errorCode: task.error_code,
+          resourceType: action.resource_type,
+        });
+        onToast(explained.summary, 'error');
+      } else {
+        onToast('任务已进入队列', 'info');
+      }
     } catch (error) {
-      showResourceErrorToast(error, { hasCourse: isCourseMode, isUserMode: currentRole === 'student' }, onToast);
+      const explained = explainResourceError(error, {
+        hasCourse: true,
+        isUserMode: currentRole === 'student',
+      });
+      showResourceErrorToast(error, { hasCourse: true, isUserMode: currentRole === 'student' }, onToast);
+      useUiStore.getState().openResourcePreview({
+        messageId: assistantMessageId,
+        resourceType: action.resource_type,
+        resourceTitle: action.label,
+        prompt: action.reason,
+        localStatus: 'failed',
+        localErrorMessage: explained.summary,
+      });
+      updateSessionMessages(sessionId, (items) =>
+        items.map((item) =>
+          item.id === assistantMessageId
+            ? {
+                ...item,
+                variant: 'error',
+                taskStatus: 'failed',
+                content: formatErrorContent(explained),
+              }
+            : item,
+        ),
+      );
     }
   }, [
     clearSuggestedActions,

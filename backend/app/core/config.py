@@ -1,6 +1,7 @@
 from functools import cached_property
 from pathlib import Path
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,7 +37,30 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     API_V1_PREFIX: str = "/api/v1"
 
+    # 数据库连接组件：优先从 .env 文件读取，避免沙箱环境变量注入占位符 DATABASE_URL
+    POSTGRES_HOST: str = "localhost"
+    POSTGRES_PORT: int = 5432
+    POSTGRES_DB: str = "zhike_workshop"
+    POSTGRES_USER: str = "zhike"
+    POSTGRES_PASSWORD: str = "zhike_password"
     DATABASE_URL: str = "postgresql+psycopg://zhike:zhike_password@localhost:5432/zhike_workshop"
+
+    @model_validator(mode="after")
+    def _resolve_database_url(self) -> "Settings":
+        """从 POSTGRES_* 组件重新构造 DATABASE_URL，覆盖可能被沙箱环境变量注入的占位符值。
+
+        pydantic_settings 中环境变量优先级高于 .env 文件，沙箱可能注入了含有占位符（如
+        your_user / your_password / your_db）的 DATABASE_URL 环境变量。此处检测到占位符
+        时从 POSTGRES_* 组件重新构造连接字符串，确保使用项目正确的数据库配置。
+        """
+        url = self.DATABASE_URL
+        if any(token in url for token in ("your_user", "your_password", "your_db", "user:password", "/dbname")):
+            self.DATABASE_URL = (
+                f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+                f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+            )
+        return self
+
     VALKEY_URL: str = "redis://localhost:6379/0"
     OBJECT_STORAGE_ROOT: str = "./storage"
     MODEL_PROVIDER_ICONS_DIR: str = "./storage/provider-icons"
@@ -59,6 +83,18 @@ class Settings(BaseSettings):
     DEFAULT_CHAT_MODEL: str = "deepseek-chat"
     DEFAULT_EMBEDDING_MODEL: str = "bge-m3"
     EMBEDDING_DIM: int = 384
+    # 本地知识库配置；缓存目录通过环境变量覆盖，避免把模型权重提交到仓库。
+    LOCAL_EMBEDDING_MODEL: str = "BAAI/bge-small-zh-v1.5"
+    LOCAL_EMBEDDING_DIMENSION: int = 512
+    LOCAL_EMBEDDING_CACHE_DIR: str = "./storage/models"
+    LOCAL_EMBEDDING_DEVICE: str = "cpu"
+    LOCAL_KNOWLEDGE_CHUNK_SIZE: int = 1200
+    LOCAL_KNOWLEDGE_CHUNK_OVERLAP: int = 150
+    # 分块器版本标识，用于追踪切片来源；"page-paragraph-v1" 为旧版字符级，"sentence-window-v2" 为句子级滑动窗口
+    LOCAL_KNOWLEDGE_CHUNKER_VERSION: str = "sentence-window-v2"
+    LOCAL_KNOWLEDGE_BM25_WEIGHT: float = 0.3
+    LOCAL_KNOWLEDGE_VECTOR_WEIGHT: float = 0.7
+    LOCAL_KNOWLEDGE_SNIPPET_SIZE: int = 800
     RAG_RETRIEVAL_LIMIT: int = 5
     RAG_RETRIEVAL_MIN_SCORE: float = 0.65
     RAG_BACKEND: str = "iflytek_chatdoc"
@@ -70,6 +106,8 @@ class Settings(BaseSettings):
     CHATDOC_WEBHOOK_PATH: str = "/api/v1/webhooks/chatdoc/status"
     CHATDOC_WEBHOOK_VERIFY_SIGNATURE: bool = False
     MODEL_GATEWAY_BASE_URL: str = "https://api.deepseek.com"
+    # 可选出站代理，例如 http://127.0.0.1:1080；留空时使用系统网络直连。
+    MODEL_GATEWAY_PROXY_URL: str | None = None
     MODEL_GATEWAY_TIMEOUT_SECONDS: float = 60.0
     MODEL_GATEWAY_MAX_TOKENS: int = 1200
     MODEL_GATEWAY_TEMPERATURE: float = 0.2
@@ -86,6 +124,12 @@ class Settings(BaseSettings):
     MODEL_GATEWAY_FAILURE_THRESHOLD: int = 3
     MODEL_GATEWAY_HEALTH_CHECK_INTERVAL_SECONDS: int = 600
     MODEL_GATEWAY_HEALTH_COOLDOWN_SECONDS: int = 300
+
+    # 代码沙箱：后端转发到 Node + Pyodide 微服务执行用户代码
+    SANDBOX_SERVICE_URL: str = "http://127.0.0.1:8003"
+    SANDBOX_EXECUTION_TIMEOUT_SECONDS: float = 10.0
+    SANDBOX_MAX_CODE_BYTES: int = 64 * 1024
+    SANDBOX_RATE_LIMIT_PER_MINUTE: int = 20
 
     # 文档解析/向量化由讯飞 ChatDoc 云端完成（PDF / TXT / MD）
     RESOURCE_GENERATION_WORKER_ENABLED: bool = True

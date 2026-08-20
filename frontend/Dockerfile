@@ -1,6 +1,6 @@
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@10.25.0 --activate
+RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
 COPY package.json pnpm-lock.yaml* .npmrc .pnpmrc ./
 RUN pnpm config set registry https://registry.npmmirror.com \
     && pnpm install

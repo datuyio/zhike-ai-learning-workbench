@@ -8,11 +8,13 @@
 
 ```text
 ResourceAgent
-  -> 可选 CloudRagProvider 获取课程依据
+  -> 可选 CloudRagProvider 获取课程依据（local_pgvector 模式由本地知识库适配器检索）
   -> ChatProvider 生成导图正文
   -> VerifyAgent 核验结构、引用和难度
   -> ArtifactCanvas 预览与保存
 ```
+
+本地 `local_pgvector` 语料可先由 `backend/scripts/sync_local_documents_to_concepts.py` 映射为 `CourseConcept`、`CourseSection` 和切片关联；学习路径节点会携带这些 `concept_id`，因此思维导图生成可直接定位到本地知识库中的具体知识点。
 
 默认输出为 Mermaid mindmap 源码，并使用 JSON 外壳承载 `source_code`，优先复用现有 ArtifactCanvas、ResourceVersion 和资源审核流程；旧版 Markmap 兼容 Markdown 资源仅作为前端兼容预览输入保留。
 

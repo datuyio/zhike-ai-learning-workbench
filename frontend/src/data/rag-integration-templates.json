@@ -21,6 +21,14 @@
           "placeholder": "控制台 APISecret"
         },
         {
+          "key": "base_url",
+          "label": "API 请求地址",
+          "type": "text",
+          "required": true,
+          "default": "https://chatdoc.xfyun.cn",
+          "placeholder": "https://chatdoc.xfyun.cn"
+        },
+        {
           "key": "wiki_filter_score",
           "label": "wikiFilterScore",
           "type": "number",
@@ -98,6 +106,14 @@
           "type": "password",
           "required": true,
           "placeholder": "百炼控制台 API Key"
+        },
+        {
+          "key": "base_url",
+          "label": "API 请求地址",
+          "type": "text",
+          "required": true,
+          "default": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "placeholder": "https://dashscope.aliyuncs.com/compatible-mode/v1"
         }
       ],
       "env_prefix": "DASHSCOPE_KB",
@@ -122,6 +138,14 @@
           "type": "password",
           "required": true,
           "placeholder": "智谱开放平台 API Key"
+        },
+        {
+          "key": "base_url",
+          "label": "API 请求地址",
+          "type": "text",
+          "required": true,
+          "default": "https://open.bigmodel.cn/api/paas/v4",
+          "placeholder": "https://open.bigmodel.cn/api/paas/v4"
         }
       ],
       "env_prefix": "ZHIPU_KB",

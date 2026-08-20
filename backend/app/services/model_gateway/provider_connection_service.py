@@ -199,7 +199,6 @@ class ModelGatewayProviderConnectionService:
 
         primary = result["checks"][0] if result["checks"] else {}
         last_error = result.get("last_error") or primary.get("error")
-        detail = last_error or primary.get("message")
         return {
             "provider_id": provider.provider,
             "chat_stream": provider.supports_stream,
@@ -210,8 +209,8 @@ class ModelGatewayProviderConnectionService:
             "latency_ms": result["avg_latency_ms"],
             "model": primary.get("model") or (provider.meta_json or {}).get("image_model") or provider.embedding_model or provider.chat_model,
             "embedding_dim": primary.get("embedding_dim") or provider.embedding_dimension,
-            "message": detail,
-            "error": last_error or detail,
+            "message": last_error,
+            "error": last_error,
         }
 
     def draft_provider(self, payload: ModelProviderUpsert) -> ModelProvider:
