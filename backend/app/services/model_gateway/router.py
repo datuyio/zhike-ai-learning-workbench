@@ -21,6 +21,7 @@ from app.services.model_gateway.provider_admin_service import ModelGatewayProvid
 from app.services.model_gateway.provider_connection_service import ModelGatewayProviderConnectionService
 from app.services.model_gateway.provider_registry_service import ModelGatewayProviderRegistryService
 from app.services.model_gateway.reload import publish_model_gateway_reload
+from app.services.model_gateway.user_override_service import UserModelOverrideService
 from app.services.model_gateway.runtime_types import ChatGenerationResult, GatewayProviderConfig
 
 
@@ -224,6 +225,7 @@ class ModelGateway:
         messages: Sequence[dict[str, str]],
         course_slug: str | None,
         provider_code: str | None = None,
+        user_override: GatewayProviderConfig | None = None,
         agent_name: str = "Answer generation",
         temperature: float = 0.2,
         max_tokens: int = 1200,
@@ -235,6 +237,7 @@ class ModelGateway:
             messages,
             course_slug,
             provider_code=provider_code,
+            user_override=user_override,
             agent_name=agent_name,
             temperature=temperature,
             max_tokens=max_tokens,
@@ -247,6 +250,7 @@ class ModelGateway:
         messages: Sequence[dict[str, str]],
         course_slug: str | None,
         provider_code: str | None = None,
+        user_override: GatewayProviderConfig | None = None,
         agent_name: str = "Answer generation",
         temperature: float = 0.2,
         max_tokens: int = 1200,
@@ -257,12 +261,19 @@ class ModelGateway:
             messages,
             course_slug,
             provider_code=provider_code,
+            user_override=user_override,
             agent_name=agent_name,
             temperature=temperature,
             max_tokens=max_tokens,
             allow_fallback=allow_fallback,
         ):
             yield event
+
+    def user_chat_override(self, user_external_id: str | None) -> GatewayProviderConfig | None:
+        """读取当前用户已启用的个人模型覆盖配置。"""
+        if not user_external_id:
+            return None
+        return UserModelOverrideService(self.db).as_gateway_config(user_external_id)
 
     def embedding_provider_configs(self, provider_code: str | None = None) -> list[GatewayProviderConfig]:
         """获取 embedding 能力可用的供应商配置。"""

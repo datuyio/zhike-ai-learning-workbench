@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 
 from app.core.config import settings
+from app.services.model_gateway.http_client import model_gateway_client_kwargs
 
 
 def embeddings_url(base_url: str) -> str:
@@ -88,7 +89,7 @@ async def call_multimodal_embedding_api(
             if encoded:
                 payload["image"] = encoded
         payload_inputs.append(payload)
-    async with httpx.AsyncClient(timeout=settings.MODEL_GATEWAY_TIMEOUT_SECONDS) as client:
+    async with httpx.AsyncClient(**model_gateway_client_kwargs(base_url, settings.MODEL_GATEWAY_TIMEOUT_SECONDS)) as client:
         response = await client.post(embeddings_url(base_url), headers=headers, json={"model": model, "input": payload_inputs})
         response.raise_for_status()
         data = response.json()
@@ -103,7 +104,7 @@ async def call_openai_embedding(*, base_url: str, api_key: str | None, model: st
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     payload: dict[str, Any] = {"model": model, "input": list(texts)}
-    async with httpx.AsyncClient(timeout=settings.MODEL_GATEWAY_TIMEOUT_SECONDS) as client:
+    async with httpx.AsyncClient(**model_gateway_client_kwargs(base_url, settings.MODEL_GATEWAY_TIMEOUT_SECONDS)) as client:
         response = await client.post(embeddings_url(base_url), headers=headers, json=payload)
         response.raise_for_status()
         data = response.json()
@@ -122,7 +123,7 @@ async def call_dashscope_embedding(*, base_url: str, api_key: str | None, model:
         "input": {"texts": list(texts)},
         "parameters": {"text_type": "document"},
     }
-    async with httpx.AsyncClient(timeout=settings.MODEL_GATEWAY_TIMEOUT_SECONDS) as client:
+    async with httpx.AsyncClient(**model_gateway_client_kwargs(base_url, settings.MODEL_GATEWAY_TIMEOUT_SECONDS)) as client:
         response = await client.post(base_url.rstrip("/"), headers=headers, json=payload)
         response.raise_for_status()
         data = response.json()

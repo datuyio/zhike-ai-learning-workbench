@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  GraduationCap,
   KeyRound,
   Loader2,
   LockKeyhole,
@@ -17,6 +18,7 @@ import {
   ShieldCheck,
   Sparkles,
   UserRound,
+  Users,
 } from 'lucide-react';
 import { api } from '../../api/endpoints';
 import {
@@ -67,9 +69,19 @@ function getPasswordStrength(password: string): number {
 
 function getTargetLabel(pathname: string): string {
   if (pathname === '/dashboard') return 'AI 学习空间';
+  if (pathname === '/ta') return '助教工作台';
   if (pathname.startsWith('/admin')) return '管理工作台';
   if (pathname.startsWith('/learning-path')) return '学习路径';
   return '刚才访问的页面';
+}
+
+/**
+ * 按账号角色决定登录后的落点：
+ * 教师（ta）进入助教工作台，其余角色沿用原先要访问的页面。
+ */
+function resolveAuthTarget(role: string | undefined, fallback: string): string {
+  if (role === 'ta') return '/ta';
+  return fallback;
 }
 
 function preserveDataModeParam(target: string, search: string): string {
@@ -91,6 +103,7 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const token = useSessionStore((state) => state.token);
+  const sessionUser = useSessionStore((state) => state.user);
   const setSession = useSessionStore((state) => state.setSession);
   const demoCredentials = api.demoAuthSession();
   const isRegister = mode === 'register';
@@ -99,6 +112,7 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
   const [email, setEmail] = useState(demoCredentials?.email ?? '');
   const [password, setPassword] = useState(demoCredentials?.password ?? '');
   const [confirmPassword, setConfirmPassword] = useState(demoCredentials?.password ?? '');
+  const [role, setRole] = useState<'student' | 'ta'>('student');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -115,7 +129,7 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
   const registerPath = preserveDataModeParam('/register', location.search);
   const title = isRegister ? '创建学习账号' : '登录智课工坊';
   const subtitle = isRegister
-    ? '完成注册后进入个人学习空间，课程权限由管理员统一分配。'
+    ? '选择学生或教师身份，注册后进入对应角色的学习与教学工作台。'
     : `登录后继续进入${getTargetLabel(from)}。`;
   const passwordRequirements = useMemo(() => buildPasswordRequirements(password), [password]);
   const passwordStrength = getPasswordStrength(password);
@@ -203,7 +217,7 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
   }, [backgroundSettings.enabled, backgroundSettings.media_type, backgroundSettings.media_url, userThemeActive]);
 
   if (token) {
-    return <Navigate to={postAuthTarget} replace />;
+    return <Navigate to={resolveAuthTarget(sessionUser?.role, postAuthTarget)} replace />;
   }
 
   function validateForm(trimmedEmail: string): boolean {
@@ -240,10 +254,10 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
     setSubmitting(true);
     try {
       const response = isRegister
-        ? await api.register({ name: name.trim(), email: trimmedEmail, password })
+        ? await api.register({ name: name.trim(), email: trimmedEmail, password, role })
         : await api.login({ email: trimmedEmail, password });
       setSession(response.access_token, response.user);
-      navigate(postAuthTarget, { replace: true });
+      navigate(resolveAuthTarget(response.user.role, postAuthTarget), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : '认证失败，请稍后重试。');
     } finally {
@@ -255,7 +269,7 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
     const demo = api.demoAuthSession();
     if (!demo) return;
     setSession(demo.token, demo.user);
-    navigate(postAuthTarget, { replace: true });
+    navigate(resolveAuthTarget(demo.user.role, postAuthTarget), { replace: true });
   }
 
   function fillDemoCredentials(): void {
@@ -390,20 +404,49 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
 
               <div className="mt-6 space-y-4">
                 {isRegister && (
-                  <label className="block" htmlFor="auth-name">
-                    <span className="auth-page__label">姓名</span>
-                    <span className="relative block">
-                      <UserRound className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                      <input
-                        id="auth-name"
-                        className="input h-12 w-full rounded-lg pl-12"
-                        value={name}
-                        autoComplete="name"
-                        onChange={(event) => setName(event.target.value)}
-                        placeholder="请输入真实姓名"
-                      />
-                    </span>
-                  </label>
+                  <>
+                    <label className="block" htmlFor="auth-name">
+                      <span className="auth-page__label">姓名</span>
+                      <span className="relative block">
+                        <UserRound className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                        <input
+                          id="auth-name"
+                          className="input h-12 w-full rounded-lg pl-12"
+                          value={name}
+                          autoComplete="name"
+                          onChange={(event) => setName(event.target.value)}
+                          placeholder="请输入真实姓名"
+                        />
+                      </span>
+                    </label>
+
+                    <div>
+                      <span className="auth-page__label">注册身份</span>
+                      <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="注册身份">
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={role === 'student'}
+                          className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors ${role === 'student' ? 'border-black bg-black text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400'}`}
+                          onClick={() => setRole('student')}
+                        >
+                          <GraduationCap size={16} /> 学生
+                        </button>
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={role === 'ta'}
+                          className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors ${role === 'ta' ? 'border-black bg-black text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400'}`}
+                          onClick={() => setRole('ta')}
+                        >
+                          <Users size={16} /> 教师
+                        </button>
+                      </div>
+                      <p className="mt-1.5 text-xs leading-5 text-neutral-400">
+                        {role === 'ta' ? '教师注册后可创建班级、发布作业测验并管理学生。' : '学生注册后可通过班级邀请码加入老师创建的班级。'}
+                      </p>
+                    </div>
+                  </>
                 )}
 
                 <label className="block" htmlFor="auth-email">

@@ -50,7 +50,7 @@ const mockData = {
   summary: '整体学习效果良好，Python 基础和算法思维表现突出，深度学习和机器学习仍有提升空间。建议加强反向传播和模型调参的练习。',
 };
 
-export function LearningAssessmentReportPage() {
+export function LearningAssessmentReportPage(): JSX.Element {
   const [data, setData] = useState<typeof mockData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -61,8 +61,31 @@ export function LearningAssessmentReportPage() {
         if (!res.ok) throw new Error('API 请求失败');
         return res.json();
       })
-      .then((data) => {
-        setData(data);
+      .then((raw) => {
+        // 将后端 snake_case 响应映射为页面渲染所需的字段结构
+        const dimensions = Array.isArray(raw.dimensions)
+          ? raw.dimensions.map((item: { name?: string; key?: string; score?: number }) => ({
+              subject: item.name ?? item.key ?? '未命名维度',
+              score: item.score ?? 0,
+              fullMark: 100,
+            }))
+          : [];
+        const trends = Array.isArray(raw.progress_trend)
+          ? raw.progress_trend.map((item: { label?: string; score?: number }) => ({
+              date: item.label ?? '',
+              score: item.score ?? 0,
+            }))
+          : [];
+        const summary =
+          Array.isArray(raw.recommendations) && raw.recommendations.length > 0
+            ? raw.recommendations.join('；')
+            : raw.overall_level ?? '暂无总结';
+        setData({
+          overallScore: raw.overall_score ?? 0,
+          dimensions,
+          trends,
+          summary,
+        });
         setLoading(false);
       })
       .catch((err) => {

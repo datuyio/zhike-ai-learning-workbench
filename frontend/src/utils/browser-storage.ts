@@ -3,13 +3,19 @@ import { parseJsonValue } from './json-parse';
 export type JsonValidator<T> = (value: unknown) => value is T;
 
 function getBrowserStorage(kind: 'localStorage' | 'sessionStorage'): Storage | null {
-  if (typeof window === 'undefined') return null;
   try {
-    return kind === 'localStorage' ? window.localStorage : window.sessionStorage;
+    if (typeof window !== 'undefined') {
+      return kind === 'localStorage' ? window.localStorage : window.sessionStorage;
+    }
+    // 兼容没有 window 的测试环境或非浏览器运行时，让内存存储桩仍可通过统一入口使用。
+    if (typeof globalThis !== 'undefined') {
+      const storage = globalThis[kind];
+      if (storage) return storage;
+    }
   } catch (error) {
     logStorageWarning('访问浏览器存储失败', kind, error);
-    return null;
   }
+  return null;
 }
 
 function getLocalStorage(): Storage | null {

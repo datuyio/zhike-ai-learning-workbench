@@ -82,7 +82,7 @@ class AuthService:
         return token, session
 
     def register(self, payload: RegisterRequest, authorization: str | None = None) -> AuthResponse:
-        """注册学生账号并创建登录会话。
+        """注册学生或教师账号并创建登录会话。
 
         参数:
             payload: 注册请求参数。
@@ -107,7 +107,7 @@ class AuthService:
             display_name=payload.name.strip(),
             email=email,
             password_hash=hash_password(payload.password),
-            role_code="student",
+            role_code=payload.role,
             status="active",
         )
         self.db.add(user)

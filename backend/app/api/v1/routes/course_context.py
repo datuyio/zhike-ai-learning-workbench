@@ -20,6 +20,7 @@ from app.schemas.course import (
 from app.services.course.repository import CourseRepository
 from app.services.knowledge.extracted_qa_repository import ExtractedQaRepository
 from app.services.knowledge.iflytek.course_chat_binding import course_ai_context_payload, resolve_course_chatdoc_binding
+from app.services.knowledge.local_knowledge import LocalKnowledgeService
 from app.services.knowledge.repository import KnowledgeRepository
 
 router = APIRouter()
@@ -62,6 +63,29 @@ async def course_ai_context(
     course = CourseRepository(db).get_course(course_id)
     if not course:
         raise HTTPException(status_code=404, detail="课程不存在")
+    if settings.RAG_BACKEND == "local_pgvector":
+        readiness = LocalKnowledgeService(db).readiness(course.get("id") or course_id)
+        knowledge_ready = bool(readiness["ready"])
+        return {
+            "course_id": readiness["course_id"],
+            "course_title": readiness["course_title"],
+            "knowledge_ready": knowledge_ready,
+            "chat_input_enabled": knowledge_ready,
+            "primary_file_id": None,
+            "file_ids_count": int(readiness["document_count"]),
+            "integration_key": "",
+            "spark_version": None,
+            "qa_mode": "LOCAL" if knowledge_ready else None,
+            "rag_backend": settings.RAG_BACKEND,
+            "require_citation_for_course_answer": True,
+            "default_use_course_evidence_for_resource": True,
+            "blocking_reason": None if knowledge_ready else "当前课程尚未导入可检索资料，请管理员先在知识库上传课程资料。",
+            "status_label": (
+                f"{readiness['course_title']} · 本地知识库已就绪"
+                if knowledge_ready
+                else f"{readiness['course_title']} · 本地知识库未就绪"
+            ),
+        }
     binding = resolve_course_chatdoc_binding(db, course_id, concept_code=concept_id)
     if binding:
         return course_ai_context_payload(binding)

@@ -128,10 +128,7 @@ export function isCredentialFieldLocked(
   field: RagIntegrationTemplate['credential_fields'][number],
 ): boolean {
   if (field.type === 'password') return false;
-  if (field.key === 'base_url' && !isGenericRagTemplate(template)) {
-    const metaUrl = template.meta_json?.default_base_url;
-    if (typeof metaUrl === 'string' && metaUrl.trim()) return true;
-  }
+  if (field.key === 'base_url') return false;
   const lockedKeys = template.meta_json?.locked_credential_keys;
   if (Array.isArray(lockedKeys) && lockedKeys.some((item) => String(item) === field.key)) {
     return true;
@@ -166,7 +163,7 @@ export function templateShowsLockedApiBaseUrl(template: RagIntegrationTemplate):
 }
 
 export function shouldShowPresetTemplateApiBaseUrl(template: RagIntegrationTemplate): boolean {
-  return !isGenericRagTemplate(template);
+  return templateShowsLockedApiBaseUrl(template);
 }
 
 export function buildTemplateEditorConfig(

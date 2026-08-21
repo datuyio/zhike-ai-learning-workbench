@@ -30,6 +30,11 @@ services:
       context: ./backend
     container_name: zhike-backend
     env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      DATABASE_URL: postgresql+psycopg://zhike:zhike_password@postgres:5432/zhike_workshop
+      VALKEY_URL: redis://valkey:6379/0
+      SANDBOX_SERVICE_URL: http://sandbox:8003
     ports:
       - "8001:8001"
     volumes:
@@ -40,7 +45,24 @@ services:
         condition: service_healthy
       valkey:
         condition: service_started
+      sandbox:
+        condition: service_healthy
     command: sh -c "alembic upgrade head && python run_dev.py"
+
+  sandbox:
+    build:
+      context: ./backend/sandbox-service
+    container_name: zhike-sandbox
+    environment:
+      SANDBOX_HOST: 0.0.0.0
+    ports:
+      - "8003:8003"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8003/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 20s
 
   frontend:
     build:

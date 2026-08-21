@@ -25,6 +25,7 @@ import './4-components/scroller.css';
 import './pages/assessment/assessment.css';
 import './4-components/workspace-chrome.css';
 import './pages/announcements/announcements.css';
+import './pages/curriculum/curriculum.css';
 import './pages/admin/interface-settings.css';
 import './pages/admin/knowledge-base.css';
 import './pages/admin/knowledge-chunk-workbench.css';

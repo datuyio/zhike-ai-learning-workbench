@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { readLocalString, writeLocalString } from '../../utils/browser-storage';
 
 const STORAGE_KEY = 'zhike-learning-path-nav-width';
 const DEFAULT_WIDTH = 280;
@@ -10,8 +11,7 @@ function clampWidth(value: number): number {
 }
 
 function readStoredWidth(): number {
-  if (typeof window === 'undefined') return DEFAULT_WIDTH;
-  const raw = window.localStorage.getItem(STORAGE_KEY);
+  const raw = readLocalString(STORAGE_KEY);
   if (!raw) return DEFAULT_WIDTH;
   const parsed = Number(raw);
   return Number.isFinite(parsed) ? clampWidth(parsed) : DEFAULT_WIDTH;
@@ -20,7 +20,12 @@ function readStoredWidth(): number {
 /**
  * 学习路径左侧目录栏宽度：默认 280px，拖拽调节范围 240–360px，宽度写入 localStorage。
  */
-export function useResizableNavWidth() {
+export function useResizableNavWidth(): {
+  navWidth: number;
+  handleResizeStart: (event: React.PointerEvent<HTMLDivElement>) => void;
+  minWidth: number;
+  maxWidth: number;
+} {
   const [navWidth, setNavWidth] = useState(readStoredWidth);
 
   const handleResizeStart = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
@@ -38,7 +43,7 @@ export function useResizableNavWidth() {
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleUp);
       document.body.classList.remove('learning-path-page--resizing');
-      window.localStorage.setItem(STORAGE_KEY, String(latestWidth));
+      writeLocalString(STORAGE_KEY, String(latestWidth));
     };
 
     document.body.classList.add('learning-path-page--resizing');

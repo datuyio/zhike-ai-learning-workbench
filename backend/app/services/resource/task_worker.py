@@ -66,16 +66,26 @@ class ResourceGenerationWorker:
         return task
 
     def claim_queued_task_from_db(self, db: Session) -> str | None:
-        """在 Redis 队列为空时，从数据库中兜底认领最早可执行的排队任务。"""
+        """在 Redis 队列为空时，从数据库兜底认领最早可执行的任务。
+
+        除排队任务外，也检查租约已过期的运行中任务，避免 worker 异常退出后
+        任务永久滞留在 planning 等中间状态。
+        """
         now = utcnow()
         tasks = db.execute(
             select(ResourceGenerationTask)
-            .where(ResourceGenerationTask.status == "queued")
+            .where(ResourceGenerationTask.status.in_(["queued", *ACTIVE_RESOURCE_STATUSES]))
             .order_by(ResourceGenerationTask.created_at.asc())
-            .limit(5)
+            .limit(20)
         ).scalars().all()
         for task in tasks:
             if task.next_retry_at and task.next_retry_at > now:
+                continue
+            if task.status in ACTIVE_RESOURCE_STATUSES and not lease_expired(
+                heartbeat_at=task.heartbeat_at,
+                locked_at=task.locked_at,
+                timeout_seconds=900,
+            ):
                 continue
             claimed = self.claim_task(db, str(task.id))
             if claimed:
@@ -91,11 +101,18 @@ class ResourceGenerationWorker:
         task_id = await asyncio.to_thread(dequeue_resource_generation, 1)
         db = SessionLocal()
         try:
+            claimed_from_db = False
             if not task_id:
                 task_id = self.claim_queued_task_from_db(db)
+                claimed_from_db = bool(task_id)
                 if not task_id:
                     return {"status": "idle", "worker_id": self.worker_id}
-            task = self.claim_task(db, task_id)
+            if claimed_from_db:
+                # 数据库兜底路径已经完成认领，不能再次调用 claim_task，否则新租约会被
+                # 当前 worker 自己的锁拒绝，任务会卡在 planning 且永远不会进入流水线。
+                task = db.get(ResourceGenerationTask, uuid.UUID(str(task_id)))
+            else:
+                task = self.claim_task(db, task_id)
             if not task:
                 return {"status": "skipped", "worker_id": self.worker_id, "task_id": task_id}
             trace_id = task.trace_id or f"resource_task_{task.id}"

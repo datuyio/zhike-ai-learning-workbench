@@ -11,7 +11,19 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
-def _redis_client() -> redis.Redis:
+_VALID_REDIS_SCHEMES = ("redis://", "rediss://", "unix://")
+
+
+def redis_progress_configured() -> bool:
+    """判断资源进度 pub/sub 所需的 Redis 是否已配置合法连接地址。"""
+    url = (settings.VALKEY_URL or "").strip()
+    return bool(url) and url.startswith(_VALID_REDIS_SCHEMES)
+
+
+def _redis_client() -> redis.Redis | None:
+    """创建资源进度 pub/sub 使用的 Redis 客户端；未配置 Redis 时返回 None。"""
+    if not redis_progress_configured():
+        return None
     return redis.from_url(settings.VALKEY_URL, decode_responses=True)
 
 
@@ -23,6 +35,9 @@ def resource_task_progress_channel(task_id: str) -> str:
 def publish_resource_task_progress(task_id: str, payload: dict[str, Any]) -> bool:
     """把资源生成快照发布到 Redis pub/sub，供 WebSocket 订阅端消费。"""
     if not task_id:
+        return False
+    if not redis_progress_configured():
+        # 未配置 Redis 时，WebSocket 订阅端会退回数据库轮询，不构造无效客户端。
         return False
     try:
         message = json.dumps(

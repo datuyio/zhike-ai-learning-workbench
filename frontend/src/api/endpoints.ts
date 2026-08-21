@@ -114,6 +114,13 @@ import type {
 } from '../types';
 import type { PresetChipSubmitRequest, PresetChipSubmitResponse } from '../types/onboarding';
 
+export type SandboxExecuteResponse = {
+  language: string;
+  output: string;
+  error: string;
+  execution_time_ms: number;
+};
+
 export type ChatPayload = {
   course_id?: string | null;
   learning_scope?: 'general' | 'course';
@@ -221,6 +228,7 @@ export type RegisterPayload = {
   name: string;
   email: string;
   password: string;
+  role?: 'student' | 'ta';
 };
 
 export type UpdateMePayload = {
@@ -783,7 +791,7 @@ export function parsePathNode(payload: unknown): PathNode {
   ) {
     throw new Error('学习路径节点响应缺少核心字段');
   }
-  const masteryScore = optionalNumber(payload.mastery_score) ?? payload.mastery;
+  const masteryScore = optionalNumber(payload.mastery_score);
   return {
     id: payload.id,
     course_id: optionalString(payload.course_id),
@@ -791,7 +799,7 @@ export function parsePathNode(payload: unknown): PathNode {
     concept_name: optionalString(payload.concept_name),
     title: payload.title,
     mastery: payload.mastery,
-    mastery_score: masteryScore,
+    ...(masteryScore === undefined ? {} : { mastery_score: masteryScore }),
     status: payload.status,
     is_remedial: typeof payload.is_remedial === 'boolean' ? payload.is_remedial : undefined,
     isRemedial: typeof payload.isRemedial === 'boolean' ? payload.isRemedial : undefined,
@@ -2722,7 +2730,7 @@ export const api = {
       }),
   register: (payload: RegisterPayload) =>
     shouldUseMockData()
-      ? Promise.resolve({ access_token: authMock.token, token_type: 'bearer', user: { ...authMock.user, name: payload.name, email: payload.email, role: 'student' } } satisfies AuthResponse)
+      ? Promise.resolve({ access_token: authMock.token, token_type: 'bearer', user: { ...authMock.user, name: payload.name, email: payload.email, role: payload.role ?? 'student' } } satisfies AuthResponse)
       : request<AuthResponse>('/auth/register', {
         method: 'POST',
         credentials: 'include',
@@ -3338,6 +3346,37 @@ export const api = {
   testModelProviderDraft: (payload: ModelProviderPayload) => (shouldUseMockData()
     ? Promise.resolve({ status: 'passed', provider_id: payload.provider, message: 'Mock 草稿连接测试通过。' } satisfies ProviderTestResult)
     : request<ProviderTestResult>('/admin/model-providers/test', { method: 'POST', body: JSON.stringify(payload) })),
+  userModelOverride: () => request<{
+    provider: string | null;
+    base_url: string | null;
+    chat_model: string | null;
+    embedding_model: string | null;
+    enabled: boolean;
+    key_configured: boolean;
+  }>('/me/model-override'),
+  saveUserModelOverride: (payload: {
+    provider: string;
+    base_url?: string | null;
+    api_key?: string | null;
+    clear_api_key?: boolean;
+    chat_model: string;
+    embedding_model?: string | null;
+    enabled: boolean;
+  }) => request<{
+    provider: string | null;
+    base_url: string | null;
+    chat_model: string | null;
+    embedding_model: string | null;
+    enabled: boolean;
+    key_configured: boolean;
+  }>('/me/model-override', { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteUserModelOverride: () => request<{ status: string }>('/me/model-override', { method: 'DELETE' }),
+  testUserModelOverride: (payload: {
+    provider: string;
+    base_url?: string | null;
+    api_key?: string | null;
+    chat_model: string;
+  }) => request<ProviderTestResult>('/me/model-override/test', { method: 'POST', body: JSON.stringify(payload) }),
   checkAllModelProviders: () => (shouldUseMockData()
     ? Promise.resolve(buildMockProviderCheckAllResult())
     : request<ProviderCheckAllResult>('/admin/model-providers/check-all', { method: 'POST' })),
@@ -3657,7 +3696,7 @@ export const api = {
     : request<IngestionStatus>(`/admin/documents/${documentId}/ingestion-status`, { validate: parseIngestionStatus })),
   coursesWithKnowledge: () => (shouldUseMockData()
     ? Promise.resolve({ course_ids: mockActiveCourses().map((course) => course.id) })
-    : request<{ course_ids: string[] }>(`/admin/courses/with-knowledge`, { validate: parseCoursesWithKnowledgeResponse })),
+    : request<{ course_ids: string[] }>('/courses/with-knowledge', { validate: parseCoursesWithKnowledgeResponse })),
   deleteKnowledgeDocument: (documentId: string) => (shouldUseMockData()
     ? Promise.resolve(mockDeleteKnowledgeDocument(documentId))
     : request<{ status: string; document_id: string; title?: string | null; filename?: string | null }>(
@@ -3751,4 +3790,9 @@ export const api = {
       validate: parseKnowledgeSearchResponse,
     });
   },
+  executeSandbox: (payload: { code: string; language?: 'python' }): Promise<SandboxExecuteResponse> =>
+    request<SandboxExecuteResponse>('/sandbox/execute', {
+      method: 'POST',
+      body: JSON.stringify({ code: payload.code, language: payload.language ?? 'python' }),
+    }),
 };

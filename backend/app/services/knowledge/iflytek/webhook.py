@@ -22,18 +22,15 @@ _WEBHOOK_DEDUP_PREFIX = "chatdoc:webhook:"
 _WEBHOOK_DEDUP_TTL_SECONDS = 86_400
 
 
-def _redis_client() -> redis.Redis:
+def _redis_client() -> redis.Redis | None:
     """创建用于 webhook 幂等去重的 Valkey 客户端。
 
-    参数:
-        无。
-
-    返回:
-        已配置 decode_responses 的 Redis 客户端实例。
-
-    副作用/失败模式:
-        读取应用配置中的 VALKEY_URL；连接失败通常在后续命令执行时以 redis.RedisError 暴露。
+    未配置合法 VALKEY_URL 时返回 None，调用方会按首次事件放行，避免空配置
+    在 redis.from_url 阶段直接抛 ValueError 阻断回调。
     """
+    url = (settings.VALKEY_URL or "").strip()
+    if not url or not url.startswith(("redis://", "rediss://", "unix://")):
+        return None
     return redis.from_url(settings.VALKEY_URL, decode_responses=True)
 
 
@@ -67,8 +64,10 @@ def register_webhook_event(file_id: str, file_status: str) -> bool:
         会向 Valkey 写入带过期时间的去重键。Valkey 不可用时记录告警并返回 True，避免回调处理被幂等
         存储故障阻断。
     """
+    client = _redis_client()
+    if client is None:
+        return True
     try:
-        client = _redis_client()
         return bool(client.set(_dedup_key(file_id, file_status), "1", nx=True, ex=_WEBHOOK_DEDUP_TTL_SECONDS))
     except redis.RedisError as exc:
         logger.warning("ChatDoc webhook dedup unavailable: %s", exc)

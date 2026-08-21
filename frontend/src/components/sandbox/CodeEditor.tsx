@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
+import { api } from '../../api/endpoints'
 
 interface CodeEditorProps {
   initialCode?: string
@@ -38,7 +39,7 @@ export default function CodeEditor({
   language = 'python',
   height = '300px',
   onChange,
-}: CodeEditorProps) {
+}: CodeEditorProps): JSX.Element {
   const [currentLanguage, setCurrentLanguage] = useState<'python' | 'javascript'>(language)
   const [code, setCode] = useState(initialCode ?? (language === 'python' ? defaultPythonCode : defaultJavaScriptCode))
   const [logs, setLogs] = useState<string[]>([])
@@ -82,32 +83,19 @@ export default function CodeEditor({
     const startTime = performance.now()
 
     try {
-      const response = await fetch('/api/v1/sandbox/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, language: 'python' }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
+      const data = await api.executeSandbox({ code, language: 'python' })
       const endTime = performance.now()
       setExecutionTime(Math.round(endTime - startTime))
 
-      if (data.stdout) {
-        setLogs((s) => [...s, String(data.stdout)])
+      if (data.output) {
+        setLogs((s) => [...s, String(data.output)])
       }
-      if (data.stderr) {
-        setLogs((s) => [...s, `Error: ${String(data.stderr)}`])
-      }
-      if (!data.stdout && !data.stderr && data.result) {
-        setLogs([String(data.result)])
+      if (data.error) {
+        setLogs((s) => [...s, `Error: ${String(data.error)}`])
       }
     } catch (err) {
-      console.warn('Python API 调用失败，当前仅支持前端 JS 沙箱:', err)
-      setLogs([`Python 模式需要后端 API 支持，目前接口不可用`])
+      console.warn('Python 代码执行失败:', err)
+      setLogs([err instanceof Error ? err.message : 'Python 代码执行失败，请稍后重试'])
     } finally {
       setLoading(false)
     }

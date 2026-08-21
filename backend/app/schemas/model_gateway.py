@@ -89,6 +89,35 @@ class ProviderTestResponse(BaseModel):
     error: str | None = None
 
 
+class UserModelOverrideRead(BaseModel):
+    """学生端个人模型覆盖配置的读取响应。"""
+
+    provider: str | None = None
+    base_url: str | None = None
+    chat_model: str | None = None
+    embedding_model: str | None = None
+    enabled: bool = False
+    key_configured: bool = False
+
+
+class UserModelOverrideUpsert(BaseModel):
+    """学生端个人模型覆盖配置的创建或更新请求。"""
+
+    provider: str = Field(..., min_length=1, max_length=120)
+    base_url: str | None = Field(default=None, max_length=500)
+    api_key: str | None = Field(default=None, max_length=500)
+    clear_api_key: bool = False
+    chat_model: str = Field(..., min_length=1, max_length=120)
+    embedding_model: str | None = Field(default=None, max_length=120)
+    enabled: bool = False
+
+
+class UserModelOverrideDeleteResponse(BaseModel):
+    """学生端个人模型覆盖配置的删除响应。"""
+
+    status: str
+
+
 class CourseModelConfigPayload(BaseModel):
     """课程级模型供应商绑定配置。"""
 

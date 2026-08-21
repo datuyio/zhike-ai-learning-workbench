@@ -111,7 +111,7 @@ export function LearningResourcePreviewDialog({
           </div>
           <div className="learning-resource-preview__actions">
             {resource?.id ? (
-              <a href={`/resource-hall?preview=${resource.id}`} title="去资源中心查看完整详情">
+              <a href={`/resource-hall?preview=${resource.id}`} title="去资源大厅查看完整详情">
                 <ExternalLink size={16} />
               </a>
             ) : null}

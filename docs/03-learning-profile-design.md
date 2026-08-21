@@ -646,7 +646,7 @@ interface ProfileEvidence {
 | 深度维度卡片 | `ProfileOverviewPanel` 底部（专业背景/长期学习目标/资源偏好） | 点击打开该维度校准 |
 | “重新校准 AI 分身”按钮 | 页面顶部工具栏 | 打开维度选择网格，用户选择要校准的维度 |
 
-**交互模式**（详见 `docs/10-onboarding-wizard-spec.md` 第 17 章）：
+**交互模式**（详见 `docs/10b-onboarding-wizard-spec.md` 第 17 章）：
 
 ```text
 用户点击“专业背景”维度标签

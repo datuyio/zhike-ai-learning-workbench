@@ -7,6 +7,7 @@ import httpx
 
 from app.core.config import settings
 from app.services.model_gateway.chat_response_parser import extract_chat_answer, extract_sse_delta
+from app.services.model_gateway.http_client import model_gateway_client_kwargs
 
 
 class ChatProviderError(RuntimeError):
@@ -110,13 +111,17 @@ async def request_chat_once(
         stream=stream,
     )
     try:
-        async with httpx.AsyncClient(timeout=settings.MODEL_GATEWAY_TIMEOUT_SECONDS) as client:
+        async with httpx.AsyncClient(**model_gateway_client_kwargs(config.base_url, settings.MODEL_GATEWAY_TIMEOUT_SECONDS)) as client:
             response = await client.post(chat_completions_url(config.base_url), headers=chat_request_headers(config), json=payload)
             response.raise_for_status()
             try:
                 data = response.json()
             except ValueError as exc:
                 raise ChatProviderError("聊天供应商返回的 JSON 无法解析") from exc
+    except httpx.ConnectError as exc:
+        raise ChatProviderError(
+            "聊天供应商连接失败：无法建立网络连接。请检查 Base URL、本机代理或防火墙配置。"
+        ) from exc
     except httpx.HTTPError as exc:
         raise ChatProviderError(f"聊天供应商 HTTP 调用失败：{exc}") from exc
     usage = data.get("usage", {}) if isinstance(data, dict) else {}
@@ -140,12 +145,16 @@ async def stream_chat_deltas(
         stream=True,
     )
     try:
-        async with httpx.AsyncClient(timeout=settings.MODEL_GATEWAY_TIMEOUT_SECONDS) as client:
+        async with httpx.AsyncClient(**model_gateway_client_kwargs(config.base_url, settings.MODEL_GATEWAY_TIMEOUT_SECONDS)) as client:
             async with client.stream("POST", chat_completions_url(config.base_url), headers=chat_request_headers(config), json=payload) as response:
                 response.raise_for_status()
                 async for line in response.aiter_lines():
                     delta = extract_sse_delta(line)
                     if delta:
                         yield delta
+    except httpx.ConnectError as exc:
+        raise ChatProviderError(
+            "聊天供应商连接失败：无法建立网络连接。请检查 Base URL、本机代理或防火墙配置。"
+        ) from exc
     except httpx.HTTPError as exc:
         raise ChatProviderError(f"聊天供应商流式 HTTP 调用失败：{exc}") from exc

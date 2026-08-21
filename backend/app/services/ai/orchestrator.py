@@ -18,6 +18,7 @@ from app.services.agent.workflow import AgentWorkflow
 from app.services.ai.intent_router import HybridIntentRouter, IntentRoute
 from app.services.knowledge.iflytek.config_service import ChatdocConfigService
 from app.services.knowledge.iflytek.course_chat_binding import CourseChatdocBinding, resolve_course_chatdoc_binding
+from app.services.knowledge.local_knowledge import LocalKnowledgeService
 from app.services.learning.repository import LearningRepository
 from app.services.model_gateway.router import ModelGateway
 from app.services.rag.retriever import CourseRetriever
@@ -53,11 +54,21 @@ class CourseAiBinding:
     default_use_course_evidence_for_resource: bool
     is_enabled: bool
     chatdoc: CourseChatdocBinding | None = None
+    local_rag_ready: bool = False
+    local_ready_document_count: int = 0
+    local_ready_chunk_count: int = 0
 
     @property
     def cloud_rag_ready(self) -> bool:
         """判断课程云端 RAG 是否可用于资料问答。"""
         return bool(self.is_enabled and self.chatdoc and self.chatdoc.knowledge_ready and self.chatdoc.primary_file_id)
+
+    @property
+    def rag_ready(self) -> bool:
+        """按当前 RAG 后端判断课程资料问答是否可用。"""
+        if settings.RAG_BACKEND == "local_pgvector":
+            return bool(self.is_enabled and self.local_rag_ready)
+        return self.cloud_rag_ready
 
 
 class CourseAiBindingService:
@@ -93,18 +104,24 @@ class CourseAiBindingService:
         if not course:
             return None
         config = dict(course.model_config_json or {})
-        active_rag_key = config.get("cloud_rag_provider_id") or config.get("cloud_rag_provider")
-        if not active_rag_key:
-            try:
-                active_rag_key = ChatdocConfigService(self.db).active_template_key()
-            except Exception:
-                logger.warning("读取默认 ChatDoc 配置失败，将按未绑定云端 RAG 处理：course_id=%s", course_id, exc_info=True)
-                active_rag_key = None
-        chatdoc_binding = resolve_course_chatdoc_binding(
-            self.db,
-            course.slug,
-            integration_key=str(active_rag_key) if active_rag_key else None,
-        )
+        chatdoc_binding = None
+        active_rag_key = None
+        local_readiness: dict[str, Any] = {}
+        if settings.RAG_BACKEND == "local_pgvector":
+            local_readiness = LocalKnowledgeService(self.db).readiness(course.slug)
+        else:
+            active_rag_key = config.get("cloud_rag_provider_id") or config.get("cloud_rag_provider")
+            if not active_rag_key:
+                try:
+                    active_rag_key = ChatdocConfigService(self.db).active_template_key()
+                except Exception:
+                    logger.warning("读取默认 ChatDoc 配置失败，将按未绑定云端 RAG 处理：course_id=%s", course_id, exc_info=True)
+                    active_rag_key = None
+            chatdoc_binding = resolve_course_chatdoc_binding(
+                self.db,
+                course.slug,
+                integration_key=str(active_rag_key) if active_rag_key else None,
+            )
         return CourseAiBinding(
             course_id=course.slug,
             chat_provider_id=str(config.get("chat_provider")).strip() if config.get("chat_provider") else None,
@@ -123,6 +140,9 @@ class CourseAiBindingService:
             ),
             is_enabled=self._safe_bool(config.get("ai_binding_enabled"), True),
             chatdoc=chatdoc_binding,
+            local_rag_ready=bool(local_readiness.get("ready")),
+            local_ready_document_count=int(local_readiness.get("document_count") or 0),
+            local_ready_chunk_count=int(local_readiness.get("chunk_count") or 0),
         )
 
     def default_general(self) -> CourseAiBinding:
@@ -374,12 +394,17 @@ class AiOrchestratorService:
                 else binding.default_use_course_evidence_for_resource
             )
         )
-        if need_evidence and not binding.cloud_rag_ready:
+        if need_evidence and not binding.rag_ready:
+            message = (
+                "当前课程还没有完成本地资料向量化，暂时无法基于课程内容生成。"
+                if settings.RAG_BACKEND == "local_pgvector"
+                else COURSE_EVIDENCE_UNAVAILABLE_MESSAGE
+            )
             return self._unavailable_response(
                 payload,
                 route="resource_generation",
                 code="course_evidence_unavailable",
-                message=COURSE_EVIDENCE_UNAVAILABLE_MESSAGE,
+                message=message,
                 fallback_action="continue_without_course_evidence",
             )
 
@@ -487,8 +512,12 @@ class AiOrchestratorService:
         """处理显式课程资料问答。"""
         if not payload.course_id:
             return self._unavailable_response(payload, route="course_rag_qa", code="course_required", message="请选择课程后使用课程资料问答")
-        if not binding.cloud_rag_ready:
-            message = binding.chatdoc.blocking_reason if binding.chatdoc else None
+        if not binding.rag_ready:
+            message = (
+                "当前课程还没有完成本地资料向量化，暂时不能使用课程资料问答。"
+                if settings.RAG_BACKEND == "local_pgvector"
+                else (binding.chatdoc.blocking_reason if binding.chatdoc else None)
+            )
             return self._unavailable_response(
                 payload,
                 route="course_rag_qa",
@@ -498,6 +527,31 @@ class AiOrchestratorService:
         )
 
         started_at = time.perf_counter()
+        if settings.RAG_BACKEND == "local_pgvector":
+            try:
+                response = await self.workflow.run_chat(payload.to_chat_request(), db, user_id)
+            except Exception as exc:
+                error_message = str(exc) or "本地课程资料问答失败"
+                logger.warning(
+                    "本地课程资料问答生成失败：course_id=%s conversation_id=%s trace_id=%s exc_type=%s",
+                    payload.course_id,
+                    payload.conversation_id,
+                    get_trace_id(),
+                    type(exc).__name__,
+                    exc_info=True,
+                )
+                return self._unavailable_response(payload, route="course_rag_qa", code="local_rag_error", message=error_message)
+            trace = list(response.agent_trace or [])
+            trace.insert(0, AgentTraceEvent(step="本地课程检索", status="completed", detail=f"命中 {len(response.citations)} 条本地引用"))
+            return AiMessageResponse.model_validate(
+                {
+                    **response.model_dump(),
+                    "route": "course_rag_qa",
+                    "agent_trace": trace,
+                    "availability": AiAvailability(ok=bool(response.answer and response.citations)),
+                }
+            )
+
         try:
             citations = await CourseRetriever().retrieve(
                 db,

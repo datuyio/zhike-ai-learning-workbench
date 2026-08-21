@@ -63,6 +63,7 @@ class ChatInvocationService:
         messages: Sequence[dict[str, str]],
         course_slug: str | None,
         provider_code: str | None = None,
+        user_override: GatewayProviderConfig | None = None,
         agent_name: str = "Answer generation",
         temperature: float = 0.2,
         max_tokens: int = 1200,
@@ -71,7 +72,7 @@ class ChatInvocationService:
     ) -> ChatGenerationResult:
         """执行一次非流式聊天模型调用，并按配置处理降级和日志记录。"""
 
-        route_plan = self._build_route_plan(provider_code, allow_fallback=allow_fallback)
+        route_plan = self._build_route_plan(provider_code, allow_fallback=allow_fallback, user_override=user_override)
         failed_attempts: list[dict[str, str]] = []
         skipped_attempts: list[dict[str, str]] = []
         overall_start = time.perf_counter()
@@ -183,6 +184,7 @@ class ChatInvocationService:
         messages: Sequence[dict[str, str]],
         course_slug: str | None,
         provider_code: str | None = None,
+        user_override: GatewayProviderConfig | None = None,
         agent_name: str = "Answer generation",
         temperature: float = 0.2,
         max_tokens: int = 1200,
@@ -190,7 +192,7 @@ class ChatInvocationService:
     ) -> AsyncIterator[dict[str, Any]]:
         """执行流式聊天模型调用，逐块产出模型事件并记录调用状态。"""
 
-        route_plan = self._build_route_plan(provider_code, allow_fallback=allow_fallback)
+        route_plan = self._build_route_plan(provider_code, allow_fallback=allow_fallback, user_override=user_override)
         failed_attempts: list[dict[str, str]] = []
         skipped_attempts: list[dict[str, str]] = []
         overall_start = time.perf_counter()
@@ -335,11 +337,20 @@ class ChatInvocationService:
             await asyncio.sleep(0)
         yield self._model_done_event(result)
 
-    def _build_route_plan(self, provider_code: str | None, *, allow_fallback: bool) -> Any:
+    def _build_route_plan(
+        self,
+        provider_code: str | None,
+        *,
+        allow_fallback: bool,
+        user_override: GatewayProviderConfig | None = None,
+    ) -> Any:
         """生成当前聊天请求的供应商候选计划。"""
 
+        candidates = self._load_candidates(provider_code)
+        if user_override is not None:
+            candidates = [user_override, *candidates]
         return build_chat_route_plan(
-            self._load_candidates(provider_code),
+            candidates,
             env_default_config=self._env_default_config,
             allow_fallback=allow_fallback,
         )

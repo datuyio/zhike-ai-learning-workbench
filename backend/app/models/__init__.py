@@ -1,4 +1,4 @@
-from app.models.base import Base
+﻿from app.models.base import Base
 from app.models.user import CourseMembership, Role, Session, User, UserCurrentCourse, UserSetting
 from app.models.course import ConceptPrerequisite, Course, CourseConcept, CourseContextSnapshot, CourseSection
 from app.models.knowledge import (
@@ -103,3 +103,8 @@ from .ta_lesson_plan import TaLessonPlan
 from .ta_grading_record import TaGradingRecord
 from .student_learning_event import StudentLearningEvent
 from .ta_alert_record import TaAlertRecord
+from .ta_announcement import TaAnnouncement
+from .ta_assignment import TaAssignment, TaSubmission
+from .ta_alert_action import TaAlertAction
+from .ta_notification import TaNotification
+from .ta_quiz import TaQuiz, TaQuizQuestion, TaQuizAttempt

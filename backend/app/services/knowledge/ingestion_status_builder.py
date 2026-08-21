@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.services.knowledge.iflytek.cloud_status import is_awaiting_activation
-from app.services.knowledge.iflytek.status_labels import chatdoc_pipeline_step_index, normalize_chatdoc_file_status
-
 
 def build_ingestion_stage(
     name: str,
@@ -40,6 +37,9 @@ def build_ingestion_stages(
     failed: bool,
 ) -> list[dict[str, Any]]:
     """根据 ChatDoc 文件状态构造完整入库流水线阶段。"""
+    # 延迟导入可避免 KnowledgeRepository 与 iflytek 包在初始化阶段互相依赖。
+    from app.services.knowledge.iflytek.status_labels import chatdoc_pipeline_step_index
+
     pipeline_index = chatdoc_pipeline_step_index(
         file_status if file_status else ("vectored" if ready else "uploaded")
     )
@@ -74,6 +74,8 @@ def compute_ingestion_progress(
 
 def resolve_chatdoc_file_status(meta: dict[str, Any]) -> str | None:
     """从文档元数据中解析标准化 ChatDoc 文件状态。"""
+    from app.services.knowledge.iflytek.status_labels import normalize_chatdoc_file_status
+
     chatdoc_status = meta.get("chatdoc_status") or {}
     return normalize_chatdoc_file_status(
         meta.get("chatdoc_file_status")
@@ -84,6 +86,8 @@ def resolve_chatdoc_file_status(meta: dict[str, Any]) -> str | None:
 
 def ingestion_flags(parse_status: str, vector_status: str, file_status: str | None) -> tuple[bool, bool, bool, bool]:
     """根据解析状态、向量状态和云端文件状态推导入库布尔标记。"""
+    from app.services.knowledge.iflytek.cloud_status import is_awaiting_activation
+
     failed = parse_status == "failed" or vector_status == "failed"
     ready = vector_status == "ready"
     awaiting = is_awaiting_activation(vector_status, file_status)

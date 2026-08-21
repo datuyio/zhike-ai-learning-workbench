@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 
 from app.core.config import settings
+from app.services.model_gateway.http_client import model_gateway_client_kwargs
 
 
 def chat_completions_url(base_url: str) -> str:
@@ -59,7 +60,7 @@ async def call_vision_api(
         "temperature": 0,
         "max_tokens": settings.MODEL_GATEWAY_MAX_TOKENS,
     }
-    async with httpx.AsyncClient(timeout=settings.MODEL_GATEWAY_TIMEOUT_SECONDS) as client:
+    async with httpx.AsyncClient(**model_gateway_client_kwargs(base_url, settings.MODEL_GATEWAY_TIMEOUT_SECONDS)) as client:
         response = await client.post(chat_completions_url(base_url), headers=headers, json=payload)
         response.raise_for_status()
         data = response.json()

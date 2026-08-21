@@ -198,7 +198,7 @@ export function ResourceUploadDialog({
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-4">
           <div className="inline-flex items-center gap-2 text-xs font-bold text-slate-500">
             <FileText size={15} />
-            PDF 课程资料请在知识大本营入库，资源中心只保存可编辑学习资源。
+            PDF 课程资料请在知识大本营入库，资源大厅只保存可编辑学习资源。
           </div>
           <div className="flex gap-2">
             <button type="button" className="btn-secondary" disabled={isPending} onClick={onClose}>取消</button>
