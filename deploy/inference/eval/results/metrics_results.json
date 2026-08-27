@@ -1,0 +1,281 @@
+{
+  "指标说明": {
+    "bleu4": "BLEU-4 字面 n-gram 精度，含 brevity penalty；越高越接近参考答案措辞",
+    "rouge_l": "ROUGE-L F1，基于最长公共子序列；越高越覆盖参考答案关键内容",
+    "semantic_sim": "TF-IDF 字符 n-gram 余弦相似度 [0,1]，衡量词汇分布接近度；越高关键词覆盖越一致",
+    "参考方向": "lora_vs_base_ref=以基座答案为参考评 LoRA；base_vs_lora_ref=以 LoRA 答案为参考评基座，双向对称"
+  },
+  "lora_vs_base_ref_汇总": {
+    "mean_bleu4": 0.0267,
+    "std_bleu4": 0.025,
+    "mean_rouge_l": 0.2059,
+    "std_rouge_l": 0.0496,
+    "mean_semantic_sim": 0.2154,
+    "std_semantic_sim": 0.0716
+  },
+  "base_vs_lora_ref_汇总": {
+    "mean_bleu4": 0.094,
+    "std_bleu4": 0.0305,
+    "mean_rouge_l": 0.2059,
+    "std_rouge_l": 0.0496,
+    "mean_semantic_sim": 0.2154,
+    "std_semantic_sim": 0.0716
+  },
+  "per_question": [
+    {
+      "question_id": "ml-01",
+      "category": "机器学习",
+      "question": "什么是过拟合？如何防止过拟合？",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0013,
+        "rouge_l": 0.1775,
+        "semantic_sim": 0.2089
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.0746,
+        "rouge_l": 0.1775,
+        "semantic_sim": 0.2089
+      }
+    },
+    {
+      "question_id": "ml-02",
+      "category": "机器学习",
+      "question": "请解释决策树的基本原理。什么是信息增益？",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0248,
+        "rouge_l": 0.1692,
+        "semantic_sim": 0.2419
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.0879,
+        "rouge_l": 0.1692,
+        "semantic_sim": 0.2419
+      }
+    },
+    {
+      "question_id": "ml-03",
+      "category": "机器学习",
+      "question": "支持向量机（SVM）的核心思想是什么？什么是核技巧？",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0541,
+        "rouge_l": 0.25,
+        "semantic_sim": 0.2196
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.1305,
+        "rouge_l": 0.25,
+        "semantic_sim": 0.2196
+      }
+    },
+    {
+      "question_id": "ml-04",
+      "category": "机器学习",
+      "question": "请解释什么是集成学习，Boosting 和 Bagging 有什么区别？",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0703,
+        "rouge_l": 0.2748,
+        "semantic_sim": 0.2604
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.141,
+        "rouge_l": 0.2748,
+        "semantic_sim": 0.2604
+      }
+    },
+    {
+      "question_id": "sl-01",
+      "category": "统计学习",
+      "question": "什么是统计学习的三要素？请解释模型、策略和算法的关系。",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0341,
+        "rouge_l": 0.2757,
+        "semantic_sim": 0.2831
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.1247,
+        "rouge_l": 0.2757,
+        "semantic_sim": 0.2831
+      }
+    },
+    {
+      "question_id": "sl-02",
+      "category": "统计学习",
+      "question": "请解释朴素贝叶斯分类器的基本原理。什么是朴素假设？",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0859,
+        "rouge_l": 0.283,
+        "semantic_sim": 0.2419
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.146,
+        "rouge_l": 0.283,
+        "semantic_sim": 0.2419
+      }
+    },
+    {
+      "question_id": "sl-03",
+      "category": "统计学习",
+      "question": "什么是 EM 算法？它主要解决什么问题？",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0035,
+        "rouge_l": 0.19,
+        "semantic_sim": 0.1708
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.0838,
+        "rouge_l": 0.19,
+        "semantic_sim": 0.1708
+      }
+    },
+    {
+      "question_id": "dl-01",
+      "category": "深度学习",
+      "question": "什么是反向传播算法？请解释它的计算过程。",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0149,
+        "rouge_l": 0.1773,
+        "semantic_sim": 0.1332
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.0635,
+        "rouge_l": 0.1773,
+        "semantic_sim": 0.1332
+      }
+    },
+    {
+      "question_id": "dl-02",
+      "category": "深度学习",
+      "question": "请解释梯度消失和梯度爆炸问题。如何解决？",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0443,
+        "rouge_l": 0.262,
+        "semantic_sim": 0.2305
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.1097,
+        "rouge_l": 0.262,
+        "semantic_sim": 0.2305
+      }
+    },
+    {
+      "question_id": "dl-03",
+      "category": "深度学习",
+      "question": "什么是批归一化（Batch Normalization）？它解决了什么问题？",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0062,
+        "rouge_l": 0.1111,
+        "semantic_sim": 0.0977
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.0542,
+        "rouge_l": 0.1111,
+        "semantic_sim": 0.0977
+      }
+    },
+    {
+      "question_id": "dl-04",
+      "category": "深度学习",
+      "question": "请比较 Adam 和 SGD 优化器的区别。",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0074,
+        "rouge_l": 0.141,
+        "semantic_sim": 0.0976
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.0335,
+        "rouge_l": 0.141,
+        "semantic_sim": 0.0976
+      }
+    },
+    {
+      "question_id": "pyt-01",
+      "category": "PyTorch实践",
+      "question": "PyTorch 中 Dataset 和 DataLoader 的作用是什么？",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0072,
+        "rouge_l": 0.1868,
+        "semantic_sim": 0.3352
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.075,
+        "rouge_l": 0.1868,
+        "semantic_sim": 0.3352
+      }
+    },
+    {
+      "question_id": "pyt-02",
+      "category": "PyTorch实践",
+      "question": "什么是 autograd？PyTorch 中如何实现自动微分？",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0118,
+        "rouge_l": 0.2201,
+        "semantic_sim": 0.3504
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.1074,
+        "rouge_l": 0.2201,
+        "semantic_sim": 0.3504
+      }
+    },
+    {
+      "question_id": "pyt-03",
+      "category": "PyTorch实践",
+      "question": "在 PyTorch 中，model.train() 和 model.eval() 有什么区别？",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0193,
+        "rouge_l": 0.2409,
+        "semantic_sim": 0.2763
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.1025,
+        "rouge_l": 0.2409,
+        "semantic_sim": 0.2763
+      }
+    },
+    {
+      "question_id": "prml-01",
+      "category": "模式识别",
+      "question": "请解释贝叶斯决策理论的基本思想。",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0069,
+        "rouge_l": 0.1681,
+        "semantic_sim": 0.1581
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.0718,
+        "rouge_l": 0.1681,
+        "semantic_sim": 0.1581
+      }
+    },
+    {
+      "question_id": "prml-02",
+      "category": "模式识别",
+      "question": "什么是维数灾难（Curse of Dimensionality）？它如何影响机器学习？",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0095,
+        "rouge_l": 0.1661,
+        "semantic_sim": 0.1846
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.0798,
+        "rouge_l": 0.1661,
+        "semantic_sim": 0.1846
+      }
+    },
+    {
+      "question_id": "prml-03",
+      "category": "模式识别",
+      "question": "请解释主成分分析（PCA）的原理和应用。",
+      "lora_vs_base_ref": {
+        "bleu4": 0.0527,
+        "rouge_l": 0.206,
+        "semantic_sim": 0.1718
+      },
+      "base_vs_lora_ref": {
+        "bleu4": 0.1122,
+        "rouge_l": 0.206,
+        "semantic_sim": 0.1718
+      }
+    }
+  ]
+}
