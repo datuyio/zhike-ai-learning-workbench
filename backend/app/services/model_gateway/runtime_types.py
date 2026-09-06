@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -49,3 +49,6 @@ class ChatGenerationResult:
     is_fallback: bool = False
     error: str | None = None
     trace_id: str | None = None
+    # 工具调用（function calling）结果：模型请求调用工具时返回的原始 tool_calls 列表；
+    # 普通对话无工具调用时为空列表。
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)

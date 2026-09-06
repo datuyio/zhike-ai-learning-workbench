@@ -42,6 +42,9 @@ def _consume_fixed_window(key: str, *, limit: int, window_seconds: int) -> tuple
     """返回是否允许请求以及需要等待的秒数。"""
     if limit <= 0:
         return True, 0
+    if not settings.VALKEY_URL.strip():
+        # Redis 未配置时跳过限流，保证本地无 Redis 的演示环境仍能正常对话。
+        return True, 0
     try:
         client = _redis_client()
         count = int(client.incr(key))
@@ -54,7 +57,7 @@ def _consume_fixed_window(key: str, *, limit: int, window_seconds: int) -> tuple
         if count <= limit:
             return True, 0
         return False, max(1, ttl)
-    except RedisError:
+    except (RedisError, ValueError):
         key_parts = key.split(":")
         key_scope = ":".join(key_parts[:2]) if len(key_parts) >= 2 else "rate"
         key_hash = hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
@@ -67,6 +70,15 @@ def _consume_fixed_window(key: str, *, limit: int, window_seconds: int) -> tuple
             exc_info=True,
         )
         return True, 0
+
+
+def consume_fixed_window(key: str, *, limit: int, window_seconds: int) -> bool:
+    """通用固定窗口限流，返回是否放行；Redis 不可用时放行（fail-open）。
+
+    供助教端预警生成等场景复用，避免各模块自建进程内存限流导致多实例失效。
+    """
+    allowed, _ = _consume_fixed_window(key, limit=limit, window_seconds=window_seconds)
+    return allowed
 
 
 def check_chat_rate_limit(user_id: str, course_id: str) -> None:

@@ -4,6 +4,8 @@ import {
   ONBOARDING_STORAGE_KEY_PREFIX,
   buildUserScopedStorageKey,
 } from '../constants/storage-keys';
+import { readLocalString, writeLocalString } from '../utils/browser-storage';
+import { tryParseJsonValue } from '../utils/json-parse';
 import type {
   OnboardingDimensionBrief,
   OnboardingRound,
@@ -38,30 +40,35 @@ export type OnboardingAction =
 
 /** 将引导状态写入 localStorage，每轮必须包含完整 history。按 userId 隔离避免多账号污染。 */
 export function persistOnboarding(state: OnboardingState, userId: string): void {
-  try {
-    const storageKey = buildUserScopedStorageKey(ONBOARDING_STORAGE_KEY_PREFIX, userId);
-    const completedKey = buildUserScopedStorageKey(ONBOARDING_COMPLETED_KEY_PREFIX, userId);
-    localStorage.setItem(storageKey, JSON.stringify(state));
-    if (state.completedAt) {
-      localStorage.setItem(completedKey, state.completedAt);
-    }
-  } catch {
-    // localStorage 不可用时静默失败
+  const storageKey = buildUserScopedStorageKey(ONBOARDING_STORAGE_KEY_PREFIX, userId);
+  const completedKey = buildUserScopedStorageKey(ONBOARDING_COMPLETED_KEY_PREFIX, userId);
+  writeLocalString(storageKey, JSON.stringify(state));
+  if (state.completedAt) {
+    writeLocalString(completedKey, state.completedAt);
   }
 }
 
 /** 从 localStorage 恢复引导状态。按 userId 隔离读取。 */
 export function restoreOnboarding(userId: string): OnboardingState | null {
-  try {
-    const storageKey = buildUserScopedStorageKey(ONBOARDING_STORAGE_KEY_PREFIX, userId);
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as OnboardingState;
-    if (!parsed || typeof parsed !== 'object') return null;
-    return parsed;
-  } catch {
-    return null;
-  }
+  const storageKey = buildUserScopedStorageKey(ONBOARDING_STORAGE_KEY_PREFIX, userId);
+  const raw = readLocalString(storageKey);
+  if (!raw) return null;
+  const parsed = tryParseJsonValue(raw);
+  if (!isOnboardingState(parsed)) return null;
+  return parsed;
+}
+
+/** 校验本地恢复出的对象是否具备完整引导状态骨架。 */
+function isOnboardingState(value: unknown): value is OnboardingState {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<OnboardingState>;
+  return (
+    typeof candidate.skipped === 'boolean'
+    && (candidate.phase === 'idle' || candidate.phase === 'active' || candidate.phase === 'closing')
+    && typeof candidate.round === 'number'
+    && Array.isArray(candidate.rounds)
+    && Array.isArray(candidate.completedDimensions)
+  );
 }
 
 export function onboardingReducer(state: OnboardingState, action: OnboardingAction): OnboardingState {

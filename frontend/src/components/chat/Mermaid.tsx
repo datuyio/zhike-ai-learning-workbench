@@ -13,7 +13,7 @@ export function Mermaid({ source, className = '' }: { source: string; className?
 				const mermaidMod = (await import('mermaid')).default;
 				mermaidMod.initialize({ startOnLoad: false, securityLevel: 'loose' });
 				const normalized = source.replace(/^```(?:mermaid)?\n?|```$/g, '').trim();
-				// ensure parse to throw helpful errors early
+				// 提前调用语法解析，让错误信息更早、更明确地暴露出来。
 				await mermaidMod.parse(normalized);
 				const { svg } = await mermaidMod.render(renderId, normalized);
 				if (!mounted) return;

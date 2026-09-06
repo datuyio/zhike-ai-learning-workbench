@@ -1,7 +1,7 @@
 [project]
 name = "zhike-workshop-backend"
 version = "0.1.0"
-description = "FastAPI backend for 智课工坊"
+description = "FastAPI backend for 智课未来"
 requires-python = ">=3.12,<3.13"
 
 [tool.pytest.ini_options]

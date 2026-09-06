@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { readLocalString, writeLocalString, removeLocalItem } from '../utils/browser-storage';
+import { tryParseJsonValue } from '../utils/json-parse';
 import { DEFAULT_OVERLAY_HERO_IMAGE_URL, resolvePresetValue } from './appearance-presets';
 
 /**
@@ -56,22 +57,21 @@ export const APPEARANCE_COMPRESS_QUALITY = 0.82;
 /** 解析 localStorage 字符串为 AppearanceState，损坏时回退默认值。 */
 function parseAppearanceState(raw: string | null): AppearanceState {
   if (!raw) return { ...DEFAULT_APPEARANCE_STATE };
-  try {
-    const parsed = JSON.parse(raw) as Partial<AppearanceState>;
-    return {
-      theme: parsed.theme === 'dark' ? 'dark' : 'light',
-      bgMode: validateBgMode(parsed.bgMode),
-      presetId: typeof parsed.presetId === 'string' ? parsed.presetId : undefined,
-      customImageUrl: typeof parsed.customImageUrl === 'string' ? parsed.customImageUrl : undefined,
-      customImageName: typeof parsed.customImageName === 'string' ? parsed.customImageName : undefined,
-      overlayOpacity: clampOverlay(parsed.overlayOpacity),
-      updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : DEFAULT_APPEARANCE_STATE.updatedAt,
-    };
-  } catch {
+  const parsed = tryParseJsonValue(raw) as Partial<AppearanceState>;
+  if (!parsed || typeof parsed !== 'object') {
     // 数据损坏时清理并回退默认值，避免反复抛错。
     removeLocalItem(appearanceStorageKey);
     return { ...DEFAULT_APPEARANCE_STATE };
   }
+  return {
+    theme: parsed.theme === 'dark' ? 'dark' : 'light',
+    bgMode: validateBgMode(parsed.bgMode),
+    presetId: typeof parsed.presetId === 'string' ? parsed.presetId : undefined,
+    customImageUrl: typeof parsed.customImageUrl === 'string' ? parsed.customImageUrl : undefined,
+    customImageName: typeof parsed.customImageName === 'string' ? parsed.customImageName : undefined,
+    overlayOpacity: clampOverlay(parsed.overlayOpacity),
+    updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : DEFAULT_APPEARANCE_STATE.updatedAt,
+  };
 }
 
 function validateBgMode(value: unknown): AppearanceBgMode {

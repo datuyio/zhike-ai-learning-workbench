@@ -103,3 +103,10 @@ from .ta_lesson_plan import TaLessonPlan
 from .ta_grading_record import TaGradingRecord
 from .student_learning_event import StudentLearningEvent
 from .ta_alert_record import TaAlertRecord
+from .ta_announcement import TaAnnouncement
+from .ta_assignment import TaAssignment, TaAssignmentQuestion, TaSubmission
+from .ta_alert_action import TaAlertAction
+from .ta_notification import TaNotification
+from .ta_quiz import TaQuiz, TaQuizQuestion, TaQuizAttempt
+from .ta_question_bank import TaQuestionBank
+from .ta_agent_confirmation import TaAgentConfirmation

@@ -13,7 +13,10 @@ from pydantic import BaseModel
 
 from app.api.v1.router import api_router
 from app.api.ws import ws_router
-from app.core.config import settings
+from app.core.config import load_project_env, settings
+
+# 启动即把 .env 注入进程环境（模型网关等模块通过 os.getenv 读取 API Key）
+load_project_env()
 from app.core.tracing import new_trace_id, reset_trace_id, set_trace_id
 from app.services.model_gateway.health import model_gateway_health_scheduler
 from app.services.model_gateway.reload import model_gateway_reload_listener

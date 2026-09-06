@@ -1,0 +1,829 @@
+{
+  "schemaVersion": "1.0",
+  "updatedAt": "2026-08-17",
+  "scope": "计算机科学与人工智能",
+  "tracks": [
+    {
+      "id": "cs-foundations",
+      "title": "计算机科学基础",
+      "description": "覆盖编程语言入门、CS 核心知识、操作系统、网络与计算机系统，是所有方向的共同底座。",
+      "icon": "Cpu",
+      "color": "sky",
+      "stages": [
+        {
+          "stage": "L0",
+          "title": "入门启蒙",
+          "goal": "建立编程直觉，完成第一个小项目，形成计算思维。",
+          "durationWeeks": 4,
+          "resources": [
+            {
+              "id": "free-programming-books",
+              "title": "free-programming-books",
+              "repo": "EbookFoundation/free-programming-books",
+              "url": "https://github.com/EbookFoundation/free-programming-books",
+              "license": "CC-BY-4.0",
+              "stars": 394603,
+              "description": "全球最全的免费编程书籍索引，适合作为资料检索入口与阅读包来源。",
+              "resourceType": "reading",
+              "difficulty": "basic",
+              "zhikeModules": ["resource-hall", "knowledge-base"],
+              "usage": "作为拓展阅读包外链库，按主题挑选章节导入知识库。"
+            },
+            {
+              "id": "python-100-days",
+              "title": "Python-100-Days",
+              "repo": "jackfrued/Python-100-Days",
+              "url": "https://github.com/jackfrued/Python-100-Days",
+              "license": "NOASSERTION",
+              "stars": 185275,
+              "description": "Python 100 天从新手到大师，含语法、Web、数据分析、爬虫和实战项目。",
+              "resourceType": "course",
+              "difficulty": "basic",
+              "zhikeModules": ["learning-path", "resource-hall", "code-lab"],
+              "usage": "拆分为 Python 基础课程章节，代码实验可直接转为 code_lab 资源。"
+            },
+            {
+              "id": "python-programming-exercises",
+              "title": "Python-programming-exercises",
+              "repo": "zhiwehu/Python-programming-exercises",
+              "url": "https://github.com/zhiwehu/Python-programming-exercises",
+              "license": "NOASSERTION",
+              "stars": 29521,
+              "description": "100+ Python 编程练习题，适合作为入门阶段测评题库。",
+              "resourceType": "quiz",
+              "difficulty": "basic",
+              "zhikeModules": ["assessment", "resource-hall"],
+              "usage": "筛选题目进入阶段测评，答案可转成错题解析。"
+            }
+          ]
+        },
+        {
+          "stage": "L1",
+          "title": "计算机科学核心",
+          "goal": "系统学习离散数学、数据结构、操作系统、网络、数据库等核心课程。",
+          "durationWeeks": 20,
+          "resources": [
+            {
+              "id": "ossu-computer-science",
+              "title": "OSSU Computer Science",
+              "repo": "ossu/computer-science",
+              "url": "https://github.com/ossu/computer-science",
+              "license": "MIT",
+              "stars": 208064,
+              "description": "免费自学计算机科学完整课程路径，含核心课程、进阶课程与毕业项目。",
+              "resourceType": "course",
+              "difficulty": "medium",
+              "zhikeModules": ["learning-path", "course-builder"],
+              "usage": "作为课程体系骨架，按课程导入章节与知识点。"
+            },
+            {
+              "id": "cs-self-learning",
+              "title": "CS 自学指南",
+              "repo": "PKUFlyingPig/cs-self-learning",
+              "url": "https://github.com/PKUFlyingPig/cs-self-learning",
+              "license": "MIT",
+              "stars": 74992,
+              "description": "北大在校生维护的计算机自学路线，中文友好，覆盖数学、编程、系统、AI。",
+              "resourceType": "course",
+              "difficulty": "medium",
+              "zhikeModules": ["learning-path", "knowledge-base"],
+              "usage": "作为中文主路线图，整理成课程章节与前置依赖。"
+            },
+            {
+              "id": "teachyourselfcs-cn",
+              "title": "TeachYourselfCS-CN",
+              "repo": "izackwu/TeachYourselfCS-CN",
+              "url": "https://github.com/izackwu/TeachYourselfCS-CN",
+              "license": "CC-BY-SA-4.0",
+              "stars": 22154,
+              "description": "自学计算机科学经典书单中文翻译，强调少数高质量教材。",
+              "resourceType": "reading",
+              "difficulty": "medium",
+              "zhikeModules": ["knowledge-base", "resource-hall"],
+              "usage": "作为阅读书单，结合电子书来源形成拓展阅读包。"
+            },
+            {
+              "id": "missing-semester-cn",
+              "title": "The Missing Semester 中文版",
+              "repo": "missing-semester-cn/missing-semester-cn",
+              "url": "https://github.com/missing-semester-cn/missing-semester-cn",
+              "license": "NOASSERTION",
+              "stars": 7372,
+              "description": "MIT 缺失的一课中文版，讲 Shell、编辑器、Git、调试、元编程等实用工具。",
+              "resourceType": "lecture",
+              "difficulty": "basic",
+              "zhikeModules": ["knowledge-base", "learning-path"],
+              "usage": "作为工程工具入门章节，配合命令行实操练习。"
+            },
+            {
+              "id": "every-programmer-should-know",
+              "title": "Every Programmer Should Know",
+              "repo": "mtdvio/every-programmer-should-know",
+              "url": "https://github.com/mtdvio/every-programmer-should-know",
+              "license": "CC-BY-4.0",
+              "stars": 100251,
+              "description": "软件工程师应知的技术清单，涵盖协议、安全、算法、数据库等知识点。",
+              "resourceType": "reference",
+              "difficulty": "medium",
+              "zhikeModules": ["knowledge-base", "resource-hall"],
+              "usage": "作为速查知识库，按知识点生成问答卡片。"
+            }
+          ]
+        },
+        {
+          "stage": "L2",
+          "title": "系统与工程实践",
+          "goal": "通过从零构建项目理解计算机系统、网络与开发工具链。",
+          "durationWeeks": 12,
+          "resources": [
+            {
+              "id": "build-your-own-x",
+              "title": "Build Your Own X",
+              "repo": "codecrafters-io/build-your-own-x",
+              "url": "https://github.com/codecrafters-io/build-your-own-x",
+              "license": "none",
+              "stars": 540386,
+              "description": "通过复刻 Git、数据库、操作系统、解释器等经典技术掌握底层原理。",
+              "resourceType": "project",
+              "difficulty": "advanced",
+              "zhikeModules": ["resource-hall", "code-lab"],
+              "usage": "精选 8-12 个项目作为实战项目库，绑定到学习路径节点。"
+            },
+            {
+              "id": "public-apis",
+              "title": "Public APIs",
+              "repo": "public-apis/public-apis",
+              "url": "https://github.com/public-apis/public-apis",
+              "license": "MIT",
+              "stars": 462803,
+              "description": "免费 API 大合集，适合作为 Web、数据、AI 项目的数据源。",
+              "resourceType": "reference",
+              "difficulty": "basic",
+              "zhikeModules": ["resource-hall", "code-lab"],
+              "usage": "为项目实训提供数据源，也可作为 API 调用练习材料。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "algorithms",
+      "title": "算法与数据结构",
+      "description": "覆盖算法基础、竞赛进阶与面试刷题，形成可评测的算法能力闭环。",
+      "icon": "Braces",
+      "color": "violet",
+      "stages": [
+        {
+          "stage": "L1",
+          "title": "算法基础",
+          "goal": "掌握常用数据结构和基础算法，能够独立完成经典题。",
+          "durationWeeks": 10,
+          "resources": [
+            {
+              "id": "the-algorithms-python",
+              "title": "The Algorithms Python",
+              "repo": "TheAlgorithms/Python",
+              "url": "https://github.com/TheAlgorithms/Python",
+              "license": "MIT",
+              "stars": 223788,
+              "description": "所有算法与数据结构的 Python 实现合集，适合对照学习。",
+              "resourceType": "reference",
+              "difficulty": "basic",
+              "zhikeModules": ["knowledge-base", "code-lab"],
+              "usage": "作为算法讲解代码示例，提取为知识点与代码实验。"
+            },
+            {
+              "id": "the-algorithms-java",
+              "title": "The Algorithms Java",
+              "repo": "TheAlgorithms/Java",
+              "url": "https://github.com/TheAlgorithms/Java",
+              "license": "MIT",
+              "stars": 66158,
+              "description": "Java 版算法实现合集，适合 Java 技术栈学生对照学习。",
+              "resourceType": "reference",
+              "difficulty": "basic",
+              "zhikeModules": ["knowledge-base", "code-lab"],
+              "usage": "作为 Java 课程算法示例，与 Python 版形成多语言对照。"
+            }
+          ]
+        },
+        {
+          "stage": "L2",
+          "title": "算法进阶",
+          "goal": "掌握动态规划、图论、字符串、数论等进阶算法。",
+          "durationWeeks": 12,
+          "resources": [
+            {
+              "id": "fucking-algorithm",
+              "title": "labuladong 算法",
+              "repo": "labuladong/fucking-algorithm",
+              "url": "https://github.com/labuladong/fucking-algorithm",
+              "license": "none",
+              "stars": 135363,
+              "description": "中文算法框架教程，讲透刷题套路，适合作为进阶算法讲义。",
+              "resourceType": "lecture",
+              "difficulty": "medium",
+              "zhikeModules": ["learning-path", "knowledge-base"],
+              "usage": "按专题整理为课程讲义，关联对应测评题。"
+            },
+            {
+              "id": "oi-wiki",
+              "title": "OI Wiki",
+              "repo": "OI-wiki/OI-wiki",
+              "url": "https://github.com/OI-wiki/OI-wiki",
+              "license": "none",
+              "stars": 26536,
+              "description": "信息学竞赛知识百科，覆盖基础算法到高级竞赛内容。",
+              "resourceType": "reference",
+              "difficulty": "advanced",
+              "zhikeModules": ["knowledge-base", "learning-path"],
+              "usage": "作为竞赛进阶章节资料，适合 ACM/竞赛方向学生。"
+            }
+          ]
+        },
+        {
+          "stage": "L3",
+          "title": "面试与竞赛冲刺",
+          "goal": "通过大规模刷题与系统复习达到大厂面试或竞赛水平。",
+          "durationWeeks": 8,
+          "resources": [
+            {
+              "id": "leetcode-solutions",
+              "title": "LeetCode Solutions",
+              "repo": "kamyu104/LeetCode-Solutions",
+              "url": "https://github.com/kamyu104/LeetCode-Solutions",
+              "license": "MIT",
+              "stars": 5910,
+              "description": "Python / C++ 全量 LeetCode 题解，周更，适合刷题对照。",
+              "resourceType": "quiz",
+              "difficulty": "advanced",
+              "zhikeModules": ["assessment", "resource-hall"],
+              "usage": "按专题抽取题目与解析，生成阶段测评和错题补救卡。"
+            },
+            {
+              "id": "coding-interview-university",
+              "title": "Coding Interview University",
+              "repo": "jwasham/coding-interview-university",
+              "url": "https://github.com/jwasham/coding-interview-university",
+              "license": "CC-BY-SA-4.0",
+              "stars": 359016,
+              "description": "完整软件工程师面试学习计划，覆盖 CS 全部核心知识。",
+              "resourceType": "course",
+              "difficulty": "advanced",
+              "zhikeModules": ["learning-path", "course-builder"],
+              "usage": "作为面试冲刺课程模板，映射到学习路径节点。"
+            },
+            {
+              "id": "cs-notes",
+              "title": "CS-Notes",
+              "repo": "CyC2018/CS-Notes",
+              "url": "https://github.com/CyC2018/CS-Notes",
+              "license": "none",
+              "stars": 185373,
+              "description": "技术面试必备基础知识，覆盖操作系统、网络、数据库、系统设计。",
+              "resourceType": "reference",
+              "difficulty": "medium",
+              "zhikeModules": ["knowledge-base", "assessment"],
+              "usage": "整理成面试知识点库，配合画像生成个性化复习题。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "web-engineering",
+      "title": "Web 与前端工程",
+      "description": "从前端基础到现代前端工程化，服务网站、SaaS 与全栈开发方向。",
+      "icon": "Globe",
+      "color": "emerald",
+      "stages": [
+        {
+          "stage": "L1",
+          "title": "Web 基础",
+          "goal": "掌握 HTML、CSS、JavaScript 与响应式布局，能完成静态站点。",
+          "durationWeeks": 12,
+          "resources": [
+            {
+              "id": "odin-curriculum",
+              "title": "The Odin Project Curriculum",
+              "repo": "TheOdinProject/curriculum",
+              "url": "https://github.com/TheOdinProject/curriculum",
+              "license": "NOASSERTION",
+              "stars": 12936,
+              "description": "开源全栈 Web 开发课程，含前端、后端、数据库和项目。",
+              "resourceType": "course",
+              "difficulty": "basic",
+              "zhikeModules": ["learning-path", "course-builder"],
+              "usage": "作为 Web 开发主线课程，按模块导入章节与项目。"
+            },
+            {
+              "id": "50projects50days",
+              "title": "50 Projects 50 Days",
+              "repo": "bradtraversy/50projects50days",
+              "url": "https://github.com/bradtraversy/50projects50days",
+              "license": "MIT",
+              "stars": 40611,
+              "description": "50 个 HTML/CSS/JS 小项目，适合动手练习与灵感积累。",
+              "resourceType": "code_lab",
+              "difficulty": "basic",
+              "zhikeModules": ["resource-hall", "code-lab"],
+              "usage": "转成代码实验资源，按难度绑定到前端课程节点。"
+            }
+          ]
+        },
+        {
+          "stage": "L2",
+          "title": "JavaScript 深入",
+          "goal": "理解 JavaScript 语言机制与现代前端框架思维。",
+          "durationWeeks": 8,
+          "resources": [
+            {
+              "id": "ydkjs",
+              "title": "You Don't Know JS",
+              "repo": "getify/You-Dont-Know-JS",
+              "url": "https://github.com/getify/You-Dont-Know-JS",
+              "license": "NOASSERTION",
+              "stars": 184680,
+              "description": "深入 JavaScript 语言核心的经典书系，适合进阶阅读。",
+              "resourceType": "reading",
+              "difficulty": "medium",
+              "zhikeModules": ["knowledge-base", "resource-hall"],
+              "usage": "按章节生成 JS 深入阅读包与知识问答。"
+            },
+            {
+              "id": "javascript-questions",
+              "title": "JavaScript Questions",
+              "repo": "lydiahallie/javascript-questions",
+              "url": "https://github.com/lydiahallie/javascript-questions",
+              "license": "MIT",
+              "stars": 65315,
+              "description": "进阶 JavaScript 面试题与详细解释，适合测评与查漏补缺。",
+              "resourceType": "quiz",
+              "difficulty": "medium",
+              "zhikeModules": ["assessment", "knowledge-base"],
+              "usage": "作为 JS 测评题库，错题自动生成补救卡。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data-system",
+      "title": "数据与系统设计",
+      "description": "覆盖数据工程、机器学习工程、系统设计，建立生产级工程能力。",
+      "icon": "Database",
+      "color": "amber",
+      "stages": [
+        {
+          "stage": "L2",
+          "title": "系统设计与数据工程",
+          "goal": "理解大规模系统设计与数据管线的核心模式。",
+          "durationWeeks": 12,
+          "resources": [
+            {
+              "id": "system-design-primer",
+              "title": "System Design Primer",
+              "repo": "donnemartin/system-design-primer",
+              "url": "https://github.com/donnemartin/system-design-primer",
+              "license": "NOASSERTION",
+              "stars": 364350,
+              "description": "大规模系统设计学习资料，含 Anki 卡、架构图和面试题。",
+              "resourceType": "course",
+              "difficulty": "advanced",
+              "zhikeModules": ["learning-path", "knowledge-base", "assessment"],
+              "usage": "作为系统设计课程讲义，面试题进入测评题库。"
+            },
+            {
+              "id": "awesome-architecture",
+              "title": "Awesome Architecture",
+              "repo": "study8677/awesome-architecture",
+              "url": "https://github.com/study8677/awesome-architecture",
+              "license": "MIT",
+              "stars": 2135,
+              "description": "架构优先的系统设计双语教程、架构模板与端到端案例，覆盖分布式系统、数据一致性、可观测性和 AI 原生架构。",
+              "resourceType": "course",
+              "difficulty": "advanced",
+              "zhikeModules": ["knowledge-base", "learning-path", "resource-hall"],
+              "usage": "作为数据与系统设计主课程语料，模板和案例绑定到学习路径与资源大厅。"
+            },
+            {
+              "id": "data-engineering-zoomcamp",
+              "title": "Data Engineering Zoomcamp",
+              "repo": "DataTalksClub/data-engineering-zoomcamp",
+              "url": "https://github.com/DataTalksClub/data-engineering-zoomcamp",
+              "license": "none",
+              "stars": 44670,
+              "description": "免费 9 周数据工程课程，覆盖管道、数仓、批流处理与部署。",
+              "resourceType": "course",
+              "difficulty": "advanced",
+              "zhikeModules": ["learning-path", "resource-hall"],
+              "usage": "作为数据工程主线课程，周任务转成项目实训。"
+            },
+            {
+              "id": "mlops-zoomcamp",
+              "title": "MLOps Zoomcamp",
+              "repo": "DataTalksClub/mlops-zoomcamp",
+              "url": "https://github.com/DataTalksClub/mlops-zoomcamp",
+              "license": "none",
+              "stars": 15128,
+              "description": "免费 MLOps 课程，覆盖实验管理、编排、部署、监控与模型治理。",
+              "resourceType": "course",
+              "difficulty": "advanced",
+              "zhikeModules": ["learning-path", "resource-hall"],
+              "usage": "作为 AI 工程化课程，与画像、资源审核流程联动。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ai-ml",
+      "title": "机器学习与深度学习",
+      "description": "从零基础到深度学习论文复现，形成完整的 AI 理论+实践路径。",
+      "icon": "BrainCircuit",
+      "color": "rose",
+      "stages": [
+        {
+          "stage": "L1",
+          "title": "AI/ML 入门",
+          "goal": "理解机器学习基本概念，能完成经典分类、回归与聚类任务。",
+          "durationWeeks": 12,
+          "resources": [
+            {
+              "id": "ml-for-beginners",
+              "title": "ML For Beginners",
+              "repo": "microsoft/ML-For-Beginners",
+              "url": "https://github.com/microsoft/ML-For-Beginners",
+              "license": "MIT",
+              "stars": 89447,
+              "description": "微软 12 周机器学习课程，26 课 52 测验，含代码与项目。",
+              "resourceType": "course",
+              "difficulty": "basic",
+              "zhikeModules": ["learning-path", "knowledge-base", "assessment"],
+              "usage": "作为 ML 入门主线课程，测验题直接进入阶段测评。"
+            },
+            {
+              "id": "ai-for-beginners",
+              "title": "AI For Beginners",
+              "repo": "microsoft/AI-For-Beginners",
+              "url": "https://github.com/microsoft/AI-For-Beginners",
+              "license": "MIT",
+              "stars": 65119,
+              "description": "微软 12 周 AI 课程，24 课，覆盖经典 AI 与符号推理。",
+              "resourceType": "course",
+              "difficulty": "basic",
+              "zhikeModules": ["learning-path", "knowledge-base"],
+              "usage": "作为 AI 通识主线，用于无课程通用学习场景。"
+            },
+            {
+              "id": "data-science-for-beginners",
+              "title": "Data Science For Beginners",
+              "repo": "microsoft/Data-Science-For-Beginners",
+              "url": "https://github.com/microsoft/Data-Science-For-Beginners",
+              "license": "MIT",
+              "stars": 36632,
+              "description": "微软 10 周数据科学课程，20 课，覆盖数据生命周期。",
+              "resourceType": "course",
+              "difficulty": "basic",
+              "zhikeModules": ["learning-path", "knowledge-base"],
+              "usage": "作为数据科学入门课程，配数据分析代码实验。"
+            }
+          ]
+        },
+        {
+          "stage": "L2",
+          "title": "机器学习深入",
+          "goal": "理解算法原理并手写实现，建立模型评估与调参能力。",
+          "durationWeeks": 10,
+          "resources": [
+            {
+              "id": "homemade-machine-learning",
+              "title": "Homemade Machine Learning",
+              "repo": "trekhleb/homemade-machine-learning",
+              "url": "https://github.com/trekhleb/homemade-machine-learning",
+              "license": "MIT",
+              "stars": 24759,
+              "description": "用 Python 手写主流 ML 算法，含 Jupyter 演示与数学推导。",
+              "resourceType": "code_lab",
+              "difficulty": "medium",
+              "zhikeModules": ["code-lab", "learning-path"],
+              "usage": "作为算法原理实验包，配合公式讲义学习。"
+            },
+            {
+              "id": "ml-specialization-notes",
+              "title": "ML Specialization Notes",
+              "repo": "greyhatguy007/Machine-Learning-Specialization-Coursera",
+              "url": "https://github.com/greyhatguy007/Machine-Learning-Specialization-Coursera",
+              "license": "MIT",
+              "stars": 7774,
+              "description": "吴恩达机器学习专项课程笔记与解答，适合系统复习。",
+              "resourceType": "lecture",
+              "difficulty": "medium",
+              "zhikeModules": ["knowledge-base", "resource-hall"],
+              "usage": "整理为 ML 章节讲义与课后题。"
+            }
+          ]
+        },
+        {
+          "stage": "L3",
+          "title": "深度学习",
+          "goal": "掌握神经网络、CNN、RNN、Transformer 与经典论文实现。",
+          "durationWeeks": 16,
+          "resources": [
+            {
+              "id": "deep-learning-lhy-notes",
+              "title": "李宏毅深度学习笔记",
+              "repo": "unclestrong/DeepLearning_LHY21_Notes",
+              "url": "https://github.com/unclestrong/DeepLearning_LHY21_Notes",
+              "license": "MIT",
+              "stars": 1663,
+              "description": "李宏毅深度学习课程学习笔记，中文友好，适合入门深度学习。",
+              "resourceType": "lecture",
+              "difficulty": "medium",
+              "zhikeModules": ["knowledge-base", "learning-path"],
+              "usage": "作为深度学习中文讲义，按章节建课程。"
+            },
+            {
+              "id": "fastbook",
+              "title": "Fastbook",
+              "repo": "fastai/fastbook",
+              "url": "https://github.com/fastai/fastbook",
+              "license": "NOASSERTION",
+              "stars": 25212,
+              "description": "fastai 深度学习教材，以 Jupyter Notebook 形式出版，实践导向。",
+              "resourceType": "course",
+              "difficulty": "medium",
+              "zhikeModules": ["learning-path", "code-lab"],
+              "usage": "作为实践型 DL 课程，Notebook 转成代码实验。"
+            },
+            {
+              "id": "nn-zero-to-hero",
+              "title": "Neural Networks Zero to Hero",
+              "repo": "karpathy/nn-zero-to-hero",
+              "url": "https://github.com/karpathy/nn-zero-to-hero",
+              "license": "MIT",
+              "stars": 23999,
+              "description": "Karpathy 从零实现神经网络系列课程，含视频与代码。",
+              "resourceType": "course",
+              "difficulty": "advanced",
+              "zhikeModules": ["learning-path", "code-lab"],
+              "usage": "作为从零手写网络的高级课程，配 micrograd 实验。"
+            },
+            {
+              "id": "micrograd",
+              "title": "Micrograd",
+              "repo": "karpathy/micrograd",
+              "url": "https://github.com/karpathy/micrograd",
+              "license": "MIT",
+              "stars": 17158,
+              "description": "微型自动求导引擎，150 行代码讲清反向传播。",
+              "resourceType": "code_lab",
+              "difficulty": "advanced",
+              "zhikeModules": ["code-lab", "knowledge-base"],
+              "usage": "作为反向传播核心实验，配示意图讲解。"
+            },
+            {
+              "id": "annotated-dl-papers",
+              "title": "Annotated Deep Learning Papers",
+              "repo": "labmlai/annotated_deep_learning_paper_implementations",
+              "url": "https://github.com/labmlai/annotated_deep_learning_paper_implementations",
+              "license": "MIT",
+              "stars": 67310,
+              "description": "60+ 深度学习论文实现与注释，覆盖 Transformer、GAN、强化学习等。",
+              "resourceType": "reference",
+              "difficulty": "advanced",
+              "zhikeModules": ["knowledge-base", "resource-hall"],
+              "usage": "作为论文复现资料库，支持研究型学习路径。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "llm-agents",
+      "title": "大模型与 AI Agent",
+      "description": "从提示工程到大模型训练、Agent 应用，覆盖生成式 AI 完整技术栈。",
+      "icon": "Sparkles",
+      "color": "fuchsia",
+      "stages": [
+        {
+          "stage": "L2",
+          "title": "提示工程与生成式 AI",
+          "goal": "掌握 Prompt、RAG、Function Calling 与生成式 AI 应用开发。",
+          "durationWeeks": 8,
+          "resources": [
+            {
+              "id": "generative-ai-for-beginners",
+              "title": "Generative AI For Beginners",
+              "repo": "microsoft/Generative-AI-For-Beginners",
+              "url": "https://github.com/microsoft/Generative-AI-For-Beginners",
+              "license": "MIT",
+              "stars": 117918,
+              "description": "微软 21 课生成式 AI 课程，含提示工程、RAG、Agent 与评估。",
+              "resourceType": "course",
+              "difficulty": "medium",
+              "zhikeModules": ["learning-path", "knowledge-base", "assessment"],
+              "usage": "作为生成式 AI 主线课程，与智课 Agent 架构高度契合。"
+            },
+            {
+              "id": "prompt-engineering-guide",
+              "title": "Prompt Engineering Guide",
+              "repo": "dair-ai/Prompt-Engineering-Guide",
+              "url": "https://github.com/dair-ai/Prompt-Engineering-Guide",
+              "license": "MIT",
+              "stars": 77525,
+              "description": "提示工程、上下文工程、RAG 与 Agent 的综合指南。",
+              "resourceType": "reference",
+              "difficulty": "medium",
+              "zhikeModules": ["knowledge-base", "resource-hall"],
+              "usage": "作为提示工程技术手册，供 AI 对话与资源生成引用。"
+            },
+            {
+              "id": "llm-cookbook-zh",
+              "title": "LLM Cookbook 中文版",
+              "repo": "datawhalechina/llm-cookbook",
+              "url": "https://github.com/datawhalechina/llm-cookbook",
+              "license": "none",
+              "stars": 24547,
+              "description": "吴恩达大模型系列课程中文版，含提示工程、RAG 与微调案例。",
+              "resourceType": "course",
+              "difficulty": "medium",
+              "zhikeModules": ["learning-path", "knowledge-base"],
+              "usage": "作为中文 LLM 课程，Notebook 转成代码实验。"
+            }
+          ]
+        },
+        {
+          "stage": "L3",
+          "title": "LLM 深入与 Agent 开发",
+          "goal": "理解大模型训练原理，能够开发多智能体与 RAG 应用。",
+          "durationWeeks": 12,
+          "resources": [
+            {
+              "id": "llm-course",
+              "title": "LLM Course",
+              "repo": "mlabonne/llm-course",
+              "url": "https://github.com/mlabonne/llm-course",
+              "license": "Apache-2.0",
+              "stars": 81739,
+              "description": "大语言模型完整路线图，覆盖数学、LLM 原理、微调与部署。",
+              "resourceType": "course",
+              "difficulty": "advanced",
+              "zhikeModules": ["learning-path", "knowledge-base"],
+              "usage": "作为 LLM 进阶主线，含 Colab 实验链接。"
+            },
+            {
+              "id": "agents-course",
+              "title": "Hugging Face Agents Course",
+              "repo": "huggingface/agents-course",
+              "url": "https://github.com/huggingface/agents-course",
+              "license": "Apache-2.0",
+              "stars": 31055,
+              "description": "Hugging Face Agent 官方课程，覆盖工具调用、多智能体与记忆。",
+              "resourceType": "course",
+              "difficulty": "advanced",
+              "zhikeModules": ["learning-path", "code-lab"],
+              "usage": "作为 Agent 开发主线，与智课多智能体资源生成对照学习。"
+            },
+            {
+              "id": "openai-cookbook",
+              "title": "OpenAI Cookbook",
+              "repo": "openai/openai-cookbook",
+              "url": "https://github.com/openai/openai-cookbook",
+              "license": "MIT",
+              "stars": 75289,
+              "description": "OpenAI API 官方示例，覆盖 RAG、工具调用、结构化输出等。",
+              "resourceType": "reference",
+              "difficulty": "medium",
+              "zhikeModules": ["knowledge-base", "code-lab"],
+              "usage": "作为 API 开发手册，供网关中心与资源生成参考。"
+            },
+            {
+              "id": "anthropic-courses",
+              "title": "Anthropic Courses",
+              "repo": "anthropics/courses",
+              "url": "https://github.com/anthropics/courses",
+              "license": "NOASSERTION",
+              "stars": 22638,
+              "description": "Anthropic 官方课程，覆盖提示工程、工具使用、多智能体工作流。",
+              "resourceType": "course",
+              "difficulty": "advanced",
+              "zhikeModules": ["learning-path", "knowledge-base"],
+              "usage": "作为 Agent 工作流课程，与 HybridIntentRouter 设计联动。"
+            }
+          ]
+        },
+        {
+          "stage": "L4",
+          "title": "大模型训练与复现",
+          "goal": "通过从零训练或复现大模型理解 Transformer 与分布式训练。",
+          "durationWeeks": 12,
+          "resources": [
+            {
+              "id": "nanoGPT",
+              "title": "nanoGPT",
+              "repo": "karpathy/nanoGPT",
+              "url": "https://github.com/karpathy/nanoGPT",
+              "license": "MIT",
+              "stars": 62166,
+              "description": "最简单快速的 GPT 训练/微调仓库，适合复现实验。",
+              "resourceType": "project",
+              "difficulty": "advanced",
+              "zhikeModules": ["code-lab", "resource-hall"],
+              "usage": "作为大模型训练实战项目，输出实验报告。"
+            },
+            {
+              "id": "llmc",
+              "title": "llm.c",
+              "repo": "karpathy/llm.c",
+              "url": "https://github.com/karpathy/llm.c",
+              "license": "MIT",
+              "stars": 30817,
+              "description": "用纯 C/CUDA 训练 LLM，理解底层训练原理。",
+              "resourceType": "project",
+              "difficulty": "advanced",
+              "zhikeModules": ["code-lab", "resource-hall"],
+              "usage": "作为系统级大模型实验，适合研究型学习者。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "supplement",
+      "title": "综合自修与学术素养",
+      "description": "提供职业路线图、论文阅读、视频课程索引与项目驱动学习补给。",
+      "icon": "Compass",
+      "color": "slate",
+      "stages": [
+        {
+          "stage": "L0-L4",
+          "title": "贯穿全阶段补给",
+          "goal": "为所有阶段提供路线图、论文阅读、视频课程与项目灵感。",
+          "durationWeeks": 0,
+          "resources": [
+            {
+              "id": "developer-roadmap",
+              "title": "Developer Roadmap",
+              "repo": "kamranahmedse/developer-roadmap",
+              "url": "https://github.com/kamranahmedse/developer-roadmap",
+              "license": "NOASSERTION",
+              "stars": 364697,
+              "description": "前端、后端、DevOps、AI 等方向交互式路线图。",
+              "resourceType": "reference",
+              "difficulty": "basic",
+              "zhikeModules": ["learning-path", "knowledge-base"],
+              "usage": "作为职业方向地图，支持画像中的学习目标规划。"
+            },
+            {
+              "id": "project-based-learning",
+              "title": "Project Based Learning",
+              "repo": "practical-tutorials/project-based-learning",
+              "url": "https://github.com/practical-tutorials/project-based-learning",
+              "license": "MIT",
+              "stars": 279554,
+              "description": "按语言与技术栈组织的项目式学习教程合集。",
+              "resourceType": "project",
+              "difficulty": "medium",
+              "zhikeModules": ["resource-hall", "code-lab"],
+              "usage": "作为项目实训库，为学习路径补充真实项目。"
+            },
+            {
+              "id": "papers-we-love",
+              "title": "Papers We Love",
+              "repo": "papers-we-love/papers-we-love",
+              "url": "https://github.com/papers-we-love/papers-we-love",
+              "license": "none",
+              "stars": 108798,
+              "description": "计算机科学经典论文合集，适合学术素养培养。",
+              "resourceType": "reading",
+              "difficulty": "advanced",
+              "zhikeModules": ["knowledge-base", "resource-hall"],
+              "usage": "作为论文研读资料库，支持研究型课程。"
+            },
+            {
+              "id": "ml-youtube-courses",
+              "title": "ML YouTube Courses",
+              "repo": "dair-ai/ML-YouTube-Courses",
+              "url": "https://github.com/dair-ai/ML-YouTube-Courses",
+              "license": "CC0-1.0",
+              "stars": 17359,
+              "description": "机器学习/AI 视频课程索引，持续更新。",
+              "resourceType": "reference",
+              "difficulty": "medium",
+              "zhikeModules": ["resource-hall", "learning-path"],
+              "usage": "作为视频课程推荐入口，丰富多模态学习资源。"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "closedLoop": {
+    "learn": "课程建设台建立课程与章节，知识大本营接入讲义与资料，AI 对话与课程资料问答完成学习。",
+    "practice": "代码实验、项目复现与 Build Your Own X 类项目资源承载练习环节。",
+    "assess": "测评题库、LeetCode 题解、阶段测验进入练习评估，输出评分与归因。",
+    "reflect": "学情画像更新掌握度与薄弱点，生成补救卡与路径调整。",
+    "accumulate": "生成资源沉淀到资源大厅，经审核后进入社区复用，形成完整闭环。"
+  }
+}

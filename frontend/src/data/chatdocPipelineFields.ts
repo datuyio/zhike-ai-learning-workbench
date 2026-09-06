@@ -302,7 +302,7 @@ export const CHATDOC_PIPELINE_STAGES: ChatdocPipelineStageDef[] = [
     shortLabel: '检索',
     endpoint: '/openapi/v1/vector/search',
     method: 'POST JSON',
-    hint: '智课 AI 学习室与管理端「检索测试」主链路；结果按 score 降序，retrievalFilterPolicy 控制过滤强度。',
+    hint: '智课未来学习室与管理端「检索测试」主链路；结果按 score 降序，retrievalFilterPolicy 控制过滤强度。',
     docAnchor: 'https://chatdoc.xfyun.cn/docs#/docs/api/2.1文档接口列表?id=_5-文档内容相似度检索',
     fields: [
       {

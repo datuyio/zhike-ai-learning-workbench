@@ -33,6 +33,36 @@
 | [docs/07-api-data-and-acceptance.md](./docs/07-api-data-and-acceptance.md) | API 设计、核心数据模型、验收标准、调用边界速查。 |
 | [docs/08-knowledge-mindmap-skill-design.md](./docs/08-knowledge-mindmap-skill-design.md) | 知识思维导图 Skill 的触发条件、输入输出契约、多智能体流程和质量核验。 |
 | [docs/09-current-function-inventory-and-extension-plan.md](./docs/09-current-function-inventory-and-extension-plan.md) | 当前功能盘点、总体统计、已有基本能力清单和可拓展内容建议。 |
+| [docs/11-feature-screenshots.md](./docs/11-feature-screenshots.md) | 功能界面效果展示，按产品模块汇总核心界面截图。 |
+| [docs/15-computer-ai-curriculum.md](./docs/15-computer-ai-curriculum.md) | 计算机与人工智能课程体系规划、GitHub 学习资料目录与智课承载映射。 |
+| [docs/16-knowledge-base-completion-plan.md](./docs/16-knowledge-base-completion-plan.md) | 本地知识库补全实施记录、语料导入、知识点映射与验证结果。 |
+| [docs/17-github-upload-and-reproduction.md](./docs/17-github-upload-and-reproduction.md) | GitHub 上传范围、不上传清单、其他开发者复刻与验证指南。 |
+| [docs/19-tech-support-introduction.md](./docs/19-tech-support-introduction.md) | 技术支撑介绍：总体架构、技术栈选型、核心 AI 技术、安全可信、部署运维与实测性能数据。 |
+
+---
+
+## 效果预览
+
+核心功能界面一览，完整大图见 [docs/11-feature-screenshots.md](./docs/11-feature-screenshots.md)。
+
+| 模块 | 界面 |
+|---|---|
+| 学习入口 | [![Dashboard](screenshots/02-dashboard.jpg)](docs/11-feature-screenshots.md) |
+| 课程上下文 | [![Course Context](screenshots/03-course-context.jpg)](docs/11-feature-screenshots.md) |
+| 快捷生成 | [![Resource Agent](screenshots/04-resource-agent.jpg)](docs/11-feature-screenshots.md) |
+| 伴随式交互 | [![Companion](screenshots/05-companion.jpg)](docs/11-feature-screenshots.md) |
+| 内容生成 | [![ArtifactCanvas](screenshots/06-artifact-canvas.jpg)](docs/11-feature-screenshots.md) |
+| 资源工坊 | [![Resource Workshop](screenshots/07-resource-workshop.jpg)](docs/11-feature-screenshots.md) |
+| 资源沉淀 | [![Resource Hall](screenshots/08-resource-hall.jpg)](docs/11-feature-screenshots.md) |
+| 学习路径 | [![Learning Path](screenshots/09-learning-path.jpg)](docs/11-feature-screenshots.md) |
+| 学情画像 | [![Learning Profile](screenshots/10-learning-profile.jpg)](docs/11-feature-screenshots.md) |
+| 个人治理 | [![Settings](screenshots/11-settings.jpg)](docs/11-feature-screenshots.md) |
+| 伙伴配置 | [![Companion Gallery](screenshots/12-companion-gallery.jpg)](docs/11-feature-screenshots.md) |
+| 知识治理 | [![Knowledge Base](screenshots/13-knowledge-base.jpg)](docs/11-feature-screenshots.md) |
+| 资源审核 | [![Review](screenshots/14-review.jpg)](docs/11-feature-screenshots.md) |
+| 模型网关 | [![Model Gateway](screenshots/15-model-gateway.jpg)](docs/11-feature-screenshots.md) |
+| 调用观测 | [![Gateway Ops](screenshots/16-gateway-ops.jpg)](docs/11-feature-screenshots.md) |
+| 运维监控 | [![Operations](screenshots/17-operations.jpg)](docs/11-feature-screenshots.md) |
 
 ---
 
@@ -165,6 +195,9 @@ alembic upgrade head
 cd backend
 # 同一终端沿用上一步已激活的虚拟环境，无需重复 source
 python run_dev.py
+cd "D:\Develop\Challenge Cup\backend"
+.venv\Scripts\activate
+python run_dev.py
 ```
 
 后端运行在 `http://localhost:8001`，支持热重载。
@@ -174,9 +207,23 @@ python run_dev.py
 ```bash
 cd frontend
 corepack pnpm dev
+cd "D:\Develop\Challenge Cup\frontend"
+npm run dev
 ```
 
 前端运行在 `http://localhost:5173`，API 请求通过 Vite 代理到 `localhost:8001`。
+
+**步骤 5：启动代码沙箱微服务（在线编程实验需要）**
+
+```bash
+cd backend/sandbox-service
+npm install         # 首次安装 Pyodide + Express，Pyodide 体积较大，耗时较长
+npm start           # 默认监听 http://127.0.0.1:8003
+```
+
+后端通过 `SANDBOX_SERVICE_URL=http://127.0.0.1:8003` 转发用户代码。访问 `http://127.0.0.1:8003/health` 返回 `{"status":"ready"}` 表示沙箱就绪。
+
+> 也可以直接运行根目录的 `scripts/start-dev.ps1`（或 `start-dev.bat`），脚本会自动拉起后端、前端和代码沙箱。
 
 **停止：**
 
@@ -198,6 +245,7 @@ docker compose up -d
 |---|---|---|
 | 前端 | `5173` | Vite 开发服务器 |
 | 后端 | `8001` | FastAPI + 自动 migration |
+| 代码沙箱 | `8003` | Node + Pyodide 执行用户代码 |
 | PostgreSQL | `5432` | 带 pgvector 扩展 |
 | Valkey | `6379` | Redis 兼容缓存 |
 
@@ -222,6 +270,7 @@ docker compose restart backend     # 重启后端
 |---|---|---|
 | 前端 | `5173` | http://localhost:5173 |
 | 后端 API | `8001` | http://localhost:8001 |
+| 代码沙箱 | `8003` | http://127.0.0.1:8003/health |
 | API 文档 | `8001` | http://localhost:8001/docs |
 | 健康检查 | `8001` | http://localhost:8001/health |
 | PostgreSQL | `5432` | localhost:5432 |
@@ -370,6 +419,16 @@ Cloud RAG / 文档问答 API 只能回答已经上传到对应厂商服务器并
 
 资源生成结果支持预览、编辑、保存、提交审核、进入资源大厅和后续复用；ArtifactCanvas 还支持 Markdown、DOCX、PPTX、浏览器打印 PDF、思维导图 SVG / PNG 等导出，其中 DOCX / PPTX 由前端成熟生成库按需生成，并通过 Inspector 展示规划、取证、生成、核验、安全、保存的多智能体工作流。
 
+### 3.6 持续学习与遗忘风险预测（独创亮点）
+
+系统引入“持续学习”创新机制，通过分析学生学习行为模式预测知识遗忘风险，为教师提供主动干预建议，形成“数据 → 预测 → 干预 → 反馈 → 进化”的闭环：
+
+* **遗忘风险预测**：基于艾宾浩斯遗忘曲线，结合学习事件频率、复习次数与掌握度变化趋势，计算学生×知识点级保持率与风险分，自动识别需要复习的学生并给出复习窗口建议（`/ta/continual`）。
+* **AI 反馈闭环**：教师可对 AI 教案、AI 批改、诊断建议等输出进行 1-5 星评分和文字反馈；低分反馈与阶段性校准写入进化日志，校准提示自动注入后续生成链路，持续优化模型表现。
+* **进化日志**：记录风险模型重算、易错点更新、反馈校准等系统学习行为的演变历史，形成可视化进化轨迹。
+* **画像趋势分析**：基于画像证据链增量按时间重建各维度评分轨迹，跨时间维度追踪学情画像变化，支持教学决策。
+* **错误模式识别**：自动收集批改低分记录与薄弱掌握度，聚合班级历史易错点 TOP3，并注入智能备课的教案生成 prompt。
+
 ---
 
 ## 4. 路由总览
@@ -381,11 +440,15 @@ Cloud RAG / 文档问答 API 只能回答已经上传到对应厂商服务器并
 | `/dashboard` | AI 学习工作台 | 默认入口，承载普通 Chat、课程资料问答、资源生成、任务卡片和资源画布。 |
 | `/learning-path` | 学习路径 | 课程内章节路径、节点掌握度、下一步建议和学习行动。 |
 | `/calendar` | 学习日历 | 按日期聚合并保存学习节点、复盘、小测、课程资源和公告提醒，支持完成状态。 |
+| `/curriculum` | 课程体系 | 计算机与人工智能分阶段课程地图、GitHub 开源资料目录、智课模块映射与学习闭环。 |
 | `/announcements` | 公告中心 | 查看系统通知、维护公告、规则变更和功能更新，支持已读、关闭和详情阅读。 |
 | `/resource-hall` | 资源大厅 | 基于后端真实聚合接口展示课程、通用、个人、社区、精选和推荐资源，并展示推荐证据。 |
 | `/learning-profile` | 学情画像 | 全局画像、课程画像、会话画像和多课程对比。 |
 | `/assessment` | 练习评估 | 可作答阶段测评、提交后自动评分、错题归因、AI 解析和画像更新。 |
 | `/personal-settings` | 个人设置 | 账号资料、课程分配、学习偏好、个人模型覆盖和隐私数据。 |
+| `/assignments` | 课程作业 | 查看助教布置的已发布作业，在线提交作答并查看提交状态。 |
+| `/quizzes` | 随堂测验 | 查看已发布测验，在线作答客观题并即时查看得分。 |
+| `/notifications` | 消息通知 | 助教预警、作业与测验提醒收件箱，支持未读标记与一键已读。 |
 | `/ai-room` | AI 学习室 | 与 `/dashboard` 的 AI 对话舱保持一致能力。 |
 | `/resource-workshop` | 资源工坊深链 | 解析资源任务并打开 `/dashboard` 的 ArtifactCanvas。 |
 
@@ -403,7 +466,21 @@ Cloud RAG / 文档问答 API 只能回答已经上传到对应厂商服务器并
 | `/admin/chatdoc-config` | ChatDoc 配置 | 兼容入口，用于配置 ChatDoc / 云端 RAG。 |
 | `/admin/knowledge-base?panel=recycle` | 回收站 | 查看已删除课程和文档，支持还原或彻底删除。 |
 
+### 4.3 助教端路由
+
+| 路由 | 页面 | 定位 |
+|---|---|---|
+| `/ta` | 助教工作台 | 班级统计卡、提交/预警趋势图、待办事项与风险预警列表。 |
+| `/ta/class-management` | 班级管理 | 班级增删改、邀请码生成与重置、学生增删、名单查看与班级成绩 CSV 导出。 |
+| `/ta/grading` | 批改中心 | 作业批改、手动评分、AI 批改、测验创建发布与成绩统计。 |
+| `/ta/lesson-prep` | 备课助手 | AI 生成教案、教案编辑与发布。 |
+| `/ta/diagnosis` | 学情诊断 | 班级对比、薄弱点、雷达图、趋势线图与教学建议。 |
+| `/ta/continual` | 持续学习中心 | 遗忘风险预测、错误模式 TOP3、AI 反馈闭环、画像趋势与进化日志。 |
+| `/ta/resource-review` | 资源审核 | 学生生成资源的待审队列、通过与驳回。 |
+| `/ta/announcements` | 公告管理 | 助教公告创建、编辑、置顶、撤回与列表管理。 |
+
 ---
+
 
 ## 5. 核心调用边界
 
@@ -544,6 +621,14 @@ alembic upgrade head
 密码：admin123
 ```
 
+助教端与学生端演示账号（由迁移 `0054_seed_ta_demo_data`、`0063_student_seed_passwords` 种入，密码可分别用 `SEED_TA_PASSWORD`、`SEED_STUDENT_PASSWORD` 覆盖）：
+
+```text
+助教：ta@example.edu.cn  密码：ta123456
+学生：student1@example.edu.cn ~ student6@example.edu.cn  密码：student123
+（student1~3 在「深度学习 01 班」，student4~6 在「深度学习 02 班」，学生只能看到自己班级发布的作业/测验）
+```
+
 若比赛演示需要用已存在账号快速登录，可在本地 `.env` 中临时开启免密码校验：
 
 ```bash
@@ -582,7 +667,10 @@ VITE_USE_MOCKS=true npm run dev
 
 # 或在浏览器追加 ?mock=1 临时切换
 http://localhost:5173/dashboard?mock=1
+http://localhost:5173/admin/knowledge-base?mock=1
 ```
+
+Mock 演示账号默认为管理员，用于无需后端时快速进入管理后台；从受保护页面跳转到登录页会保留 `?mock=1` 和原目标，点击「快速体验」后返回对应页面。
 
 ### 架构约定
 
@@ -597,7 +685,7 @@ http://localhost:5173/dashboard?mock=1
 ## 11. 验收速查
 
 1. `/dashboard` 默认输入必须调用 ChatProvider，不得默认调用文档问答 API。
-2. 只有用户显式选择“课程资料问答”时，才调用 CloudRagProvider。
+2. 只有用户显式选择“课程资料问答”时，才调用 CloudRagProvider 或本地 PGVector 检索。
 3. 资源生成必须通过 ResourceAgent + ChatProvider。
 4. 课程内资源生成默认先尝试检索课程依据；未命中可靠依据时降级为 ChatProvider 直接生成，不能伪造引用。
 5. 无课程状态下普通对话和通用资源生成可用。
@@ -606,3 +694,56 @@ http://localhost:5173/dashboard?mock=1
 8. 每个画像维度应有来源、更新时间和置信度。
 9. 资源生成任务必须有 ResourceTaskCard 和 ArtifactCanvas。
 10. 管理端必须能分别配置 ChatProvider 和 CloudRagProvider。
+
+## 本地知识库（T-B-07，Plan B）
+
+项目保留原有讯飞 ChatDoc 云端实现，同时提供可配置的本地 `PDF / Markdown → 分块 → BGE-small-zh-v1.5 → PGVector → BM25 + 向量混合检索` 链路。当前本地演示环境使用 `backend/.env` 中的 `RAG_BACKEND=local_pgvector`；根 `.env.example` 仍保留讯飞 ChatDoc 作为默认模板，两者会按启动目录的配置优先级生效。
+
+本地 Embedding 模型权重按当前项目要求随仓库提供，位于 `backend/storage/models/models--BAAI--bge-small-zh-v1.5`。首次导入或检索会优先使用该缓存；如果目录缺失或不完整，程序仍会尝试从 Hugging Face 下载补全。
+
+```text
+RAG_BACKEND=local_pgvector
+LOCAL_EMBEDDING_MODEL=BAAI/bge-small-zh-v1.5
+LOCAL_EMBEDDING_DIMENSION=512
+# 从 backend 目录运行时指向 backend/storage/models；也可改为其他本地目录
+LOCAL_EMBEDDING_CACHE_DIR=./storage/models
+LOCAL_EMBEDDING_DEVICE=cpu
+```
+
+初始化本地语料并完成验收：
+
+```bash
+cd backend
+$env:PYTHONPATH="."
+.\.venv\Scripts\python.exe scripts\seed_curriculum_catalog.py
+.\.venv\Scripts\python.exe scripts\import_knowledge_corpus.py
+.\.venv\Scripts\python.exe scripts\sync_local_documents_to_concepts.py --rebuild-paths
+# 已就绪课程：GET /api/v1/courses/with-knowledge
+# 学习路径：GET /api/v1/courses/{course_id}/path
+# 知识库检索：GET /api/v1/admin/knowledge/search?course_id=...&q=...
+```
+
+同步脚本会从 Markdown 相对路径、标题层级和仓库目录结构提取本地学习主题，创建或更新 `CourseConcept` 与 `CourseSection`，把切片关联到 `DocumentChunk.concept_id`，并重建管理员学习路径。脚本使用稳定编码，可重复执行；重复运行不会新增重复知识点。
+
+当前语料覆盖 7 条课程主线，共 1165 份本地文档、24167 个可检索切片。导入脚本默认跳过 `NOASSERTION` 或未声明许可证的仓库；MIT、Apache-2.0 和允许再分发的 CC 许可内容可批量入库。扫描版 PDF 需要先 OCR；切片会保留页码、标题路径、文档和切片编号。数据库向量列固定为 512 维，切换 Embedding 模型时必须同时检查维度和迁移。
+
+## 12. 助教端演示（TA Portal）
+
+助教端与助学端共用同一套前端体系，视觉与交互遵循 `docs/layout-spec.md`：页面顶部使用裸页头 Page Header，操作区使用左对齐的 PageHeaderToolbar，不引入自定义排版。
+
+| 路由 | 页面 | 能力 |
+|---|---|---|
+| `/ta` | 助教工作台 | 班级统计、趋势图、待办与预警。 |
+| `/ta/class-management` | 班级管理 | 班级/学生管理与成绩 CSV 导出；创建班级自动生成邀请码，支持复制与重置。 |
+| `/ta/grading` | 批改中心 | 作业批改、AI 批改、测验管理与成绩统计。 |
+| `/ta/lesson-prep` | 备课助手 | AI 生成与发布教案。 |
+| `/ta/diagnosis` | 学情诊断 | 班级对比、薄弱点与教学建议。 |
+| `/ta/continual` | 持续学习中心 | 遗忘风险预测、错误模式 TOP3、AI 反馈闭环、画像趋势与进化日志。 |
+| `/ta/resource-review` | 资源审核 | 学生资源审核队列。 |
+| `/ta/announcements` | 公告管理 | 公告创建、置顶与撤回。 |
+| `/assignments` | 课程作业 | 学生查看并提交作业。 |
+| `/quizzes` | 随堂测验 | 学生在线作答、即时判分。 |
+| `/notifications` | 消息通知 | 助教提醒收件箱。 |
+| `/classes` | 我的班级 | 学生凭邀请码加入班级、查看班内信息与邀请码、退出班级。 |
+
+演示账号（仅限本地开发/演示环境）：`ta@example.edu.cn`。密码由种子迁移 `backend/alembic/versions/0054_seed_ta_demo_data.py` 中的 `SEED_TA_PASSWORD` 环境变量提供，未配置时使用迁移内的演示默认值；正式环境必须通过 `.env` 配置强密码。`/register` 注册页支持选择学生或教师身份：教师注册后登录进入 `/ta` 助教工作台，学生注册后进入学生工作台，可凭教师提供的班级邀请码自助加入班级。

@@ -1,21 +1,28 @@
-import React from 'react'
-import CodeEditor from '../../components/sandbox/CodeEditor'
+import { useState } from 'react';
+import { PageHeader } from '../../components/shared/PageHeader';
+import CodeEditor from '../../components/sandbox/CodeEditor';
+import { CodeAssistantPanel } from '../../components/sandbox/CodeAssistantPanel';
 
 /**
- * SandboxPage
- * - 学生端代码沙箱演示页面
- * - 支持 Python / JavaScript 双模式运行
+ * 在线编程实验页。
+ * 左侧为代码编辑器与运行控制台，右侧为 AI 代码辅导面板。
  */
 export default function SandboxPage(): JSX.Element {
+  const [currentCode, setCurrentCode] = useState('');
+
   return (
-    <main style={{ padding: 16 }}>
-      <h2 style={{ margin: '8px 0' }}>代码沙箱</h2>
-      <p style={{ color: '#6b7280', marginBottom: 16 }}>
-        该页面展示可执行代码编辑器，支持 Python 后端执行与 JavaScript 前端沙箱执行。
-      </p>
-      <div style={{ maxWidth: 1040 }}>
-        <CodeEditor />
+    <div className="space-y-6 px-6 pb-8">
+      <PageHeader title="在线编程实验" subtitle="编写、运行和测试代码，右侧 AI 助手随时解答问题" />
+
+      <div className="flex gap-6">
+        <div className="min-w-0 flex-1">
+          <CodeEditor height="520px" onChange={(code) => setCurrentCode(code || '')} />
+        </div>
+
+        <div className="h-[560px] w-[420px] shrink-0">
+          <CodeAssistantPanel code={currentCode} />
+        </div>
       </div>
-    </main>
-  )
+    </div>
+  );
 }

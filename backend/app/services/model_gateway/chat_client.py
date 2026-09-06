@@ -6,7 +6,8 @@ from typing import Any, Protocol
 import httpx
 
 from app.core.config import settings
-from app.services.model_gateway.chat_response_parser import extract_chat_answer, extract_sse_delta
+from app.services.model_gateway.chat_response_parser import extract_chat_answer, extract_chat_tool_calls, extract_sse_delta
+from app.services.model_gateway.http_client import model_gateway_client_kwargs
 
 
 class ChatProviderError(RuntimeError):
@@ -46,6 +47,7 @@ def build_chat_request_payload(
     max_tokens: int,
     json_mode: bool,
     stream: bool,
+    tools: Sequence[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """构造 OpenAI 兼容聊天请求体，集中维护模型调用协议字段。"""
     payload: dict[str, Any] = {
@@ -57,6 +59,9 @@ def build_chat_request_payload(
     }
     if json_mode and config.supports_json_mode:
         payload["response_format"] = {"type": "json_object"}
+    if tools:
+        payload["tools"] = list(tools)
+        payload["tool_choice"] = "auto"
     return payload
 
 
@@ -99,8 +104,9 @@ async def request_chat_once(
     max_tokens: int,
     json_mode: bool,
     stream: bool,
-) -> tuple[str, dict[str, int]]:
-    """向兼容 OpenAI 协议的聊天接口发起一次请求并返回答案和用量。"""
+    tools: Sequence[dict[str, Any]] | None = None,
+) -> tuple[str, list[dict[str, Any]], dict[str, int]]:
+    """向兼容 OpenAI 协议的聊天接口发起一次请求并返回答案、工具调用和用量。"""
     payload = build_chat_request_payload(
         config=config,
         messages=messages,
@@ -108,19 +114,31 @@ async def request_chat_once(
         max_tokens=max_tokens,
         json_mode=json_mode,
         stream=stream,
+        tools=tools,
     )
     try:
-        async with httpx.AsyncClient(timeout=settings.MODEL_GATEWAY_TIMEOUT_SECONDS) as client:
+        async with httpx.AsyncClient(**model_gateway_client_kwargs(config.base_url, settings.MODEL_GATEWAY_TIMEOUT_SECONDS)) as client:
             response = await client.post(chat_completions_url(config.base_url), headers=chat_request_headers(config), json=payload)
-            response.raise_for_status()
+            if response.status_code >= 400:
+                # 记录供应商返回的 4xx 响应体，便于定位参数/协议问题
+                body = response.text[:1000]
+                raise ChatProviderError(f"聊天供应商 HTTP 调用失败：{response.status_code} {body}")
             try:
                 data = response.json()
             except ValueError as exc:
                 raise ChatProviderError("聊天供应商返回的 JSON 无法解析") from exc
+    except ChatProviderError:
+        raise
+    except httpx.ConnectError as exc:
+        raise ChatProviderError(
+            "聊天供应商连接失败：无法建立网络连接。请检查 Base URL、本机代理或防火墙配置。"
+        ) from exc
     except httpx.HTTPError as exc:
         raise ChatProviderError(f"聊天供应商 HTTP 调用失败：{exc}") from exc
     usage = data.get("usage", {}) if isinstance(data, dict) else {}
-    return extract_chat_answer(data), parse_chat_usage_tokens(usage)
+    answer = extract_chat_answer(data)
+    tool_calls = extract_chat_tool_calls(data) if isinstance(data, dict) else []
+    return answer, tool_calls, parse_chat_usage_tokens(usage)
 
 
 async def stream_chat_deltas(
@@ -140,12 +158,16 @@ async def stream_chat_deltas(
         stream=True,
     )
     try:
-        async with httpx.AsyncClient(timeout=settings.MODEL_GATEWAY_TIMEOUT_SECONDS) as client:
+        async with httpx.AsyncClient(**model_gateway_client_kwargs(config.base_url, settings.MODEL_GATEWAY_TIMEOUT_SECONDS)) as client:
             async with client.stream("POST", chat_completions_url(config.base_url), headers=chat_request_headers(config), json=payload) as response:
                 response.raise_for_status()
                 async for line in response.aiter_lines():
                     delta = extract_sse_delta(line)
                     if delta:
                         yield delta
+    except httpx.ConnectError as exc:
+        raise ChatProviderError(
+            "聊天供应商连接失败：无法建立网络连接。请检查 Base URL、本机代理或防火墙配置。"
+        ) from exc
     except httpx.HTTPError as exc:
         raise ChatProviderError(f"聊天供应商流式 HTTP 调用失败：{exc}") from exc

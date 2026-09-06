@@ -497,6 +497,8 @@ class ChatdocConfigService:
         draft: ChatdocConfigUpsert | None = None,
     ) -> tuple[str, str]:
         preset_key = self._preset_key_for_instance(instance_key)
+        if draft is not None and draft.preset_template_key:
+            preset_key = normalize_template_key(draft.preset_template_key)
         template = get_template(preset_key)
         row = self._row(instance_key)
         db_app_id = ""
@@ -577,6 +579,8 @@ class ChatdocConfigService:
         persist_result: bool,
     ) -> dict:
         preset_key = self._preset_key_for_instance(key)
+        if draft is not None and draft.preset_template_key:
+            preset_key = normalize_template_key(draft.preset_template_key)
         template = get_template(preset_key)
         if template is None:
             return self._record_test(

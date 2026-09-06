@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -65,12 +67,39 @@ class ChatQuality(BaseModel):
 
 
 class AgentTraceEvent(BaseModel):
-    """AI 编排链路中的单步执行状态。"""
+    """AI 编排链路中的单步执行状态。
+
+    支持层级调用链：parent_step 指向父节点名称，children 存放子节点列表。
+    前端可根据 parent_step 还原树形结构。
+    """
 
     step: str
     status: str
     detail: str | None = None
     duration_ms: int | None = None
+    parent_step: str | None = None
+    children: list[AgentTraceEvent] = Field(default_factory=list)
+
+
+class WorkflowStateSnapshot(BaseModel):
+    """工作流状态快照，用于前端可视化展示。"""
+
+    current_node: str
+    completed_nodes: list[str] = Field(default_factory=list)
+    intent: str = "default_chat"
+    status: str = "running"
+    started_at: float = 0.0
+    elapsed_ms: int = 0
+    error: str | None = None
+    route_decision: str = "default_chat"
+
+
+class WorkflowStateUpdate(BaseModel):
+    """WebSocket 推送的工作流状态更新事件。"""
+
+    snapshot: WorkflowStateSnapshot
+    trace: list[AgentTraceEvent] = Field(default_factory=list)
+    previous_node: str | None = None
 
 
 class ChatResponse(BaseModel):

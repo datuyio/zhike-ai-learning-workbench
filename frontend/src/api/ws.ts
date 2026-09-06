@@ -13,8 +13,10 @@ function resolveWsBasePath(): string {
     return `${protocol}//${apiUrl.host}/ws`;
   }
 
+  // Vite base（子路径前缀）：部署在 /zhike/ 下时，相对地址推导必须拼上前缀，否则 WebSocket 连不上
+  const BASE_PATH = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${window.location.host}/ws`;
+  return `${protocol}//${window.location.host}${BASE_PATH}/ws`;
 }
 
 /** 构造 AI 对话 WebSocket 地址；鉴权 token 通过连接后的 auth 帧发送。 */

@@ -274,11 +274,18 @@
   .personal-settings-sidebar,
   .personal-settings-section
 ) {
-  background: transparent;
+  background: var(--page-inner-surface);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border-color: var(--page-inner-border);
   box-shadow: var(--page-inner-shadow);
+}
+
+.ai-workspace-shell:not(.route-dashboard) .floating-main-canvas :is(
+  .learning-path-page__column-head,
+  .admin-panel__header
+) {
+  background: var(--page-inner-surface-muted);
 }
 
 .ai-workspace-shell:not(.route-dashboard) .floating-main-canvas .lp-panel--dark::after,
@@ -306,7 +313,7 @@
   .learning-context-strip,
   .ai-console-input
 ) {
-  background: transparent;
+  background: rgba(255, 253, 248, 0.74);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }

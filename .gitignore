@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+# frontend/.env.production 只含构建路径（无密钥），纳入版本控制便于 git 同步部署
+!frontend/.env.production
 
 # Python
 __pycache__/
@@ -9,6 +11,7 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+.cache/
 .pytest-runtime-tmp/
 .pytest-runtime-tmp*/
 .pytest-tmp/
@@ -46,8 +49,22 @@ frontend/playwright-report/
 backend/*.log
 .playwright-cli/
 output/
-storage/
-backend/storage/
+storage/*
+!storage/knowledge-sources/
+storage/knowledge-sources/*
+!storage/knowledge-sources/manifest.json
+!storage/knowledge-sources/ai-ml/
+!storage/knowledge-sources/algorithms/
+!storage/knowledge-sources/cs-foundations/
+!storage/knowledge-sources/data-system/
+!storage/knowledge-sources/llm-agents/
+!storage/knowledge-sources/supplement/
+!storage/knowledge-sources/web-engineering/
+backend/storage/*
+!backend/storage/models/
+backend/storage/models/*
+!backend/storage/models/models--BAAI--bge-small-zh-v1.5/
+backend/storage/models/models--BAAI--bge-small-zh-v1.5/.no_exist/
 
 # OS / editor
 .DS_Store

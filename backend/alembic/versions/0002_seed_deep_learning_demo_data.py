@@ -409,18 +409,23 @@ def upgrade() -> None:
         )
 
     # 模型网关供应商
+    # 注意：DeepSeek 是纯 Chat 供应商（无 /embeddings 端点），必须显式 provider_type=chat
+    # 且清空 embedding_model；否则健康检查会探测 embedding 能力并 404，把供应商标记为
+    # down 并进入冷却，导致 chat 调用全部被跳过（教案生成/AI 批改等随之降级）。
     providers = [
         (IDS["provider_spark"], "iflytek_spark", "讯飞星火", "https://spark-api-open.xf-yun.com", "openai_compatible", "spark-x1", "bge-m3", None, True, True, True, "healthy", 1),
-        (IDS["provider_deepseek"], "deepseek", "DeepSeek", "https://api.deepseek.com", "openai_compatible", "deepseek-chat", "bge-m3", None, True, False, True, "healthy", 2),
+        (IDS["provider_deepseek"], "deepseek", "DeepSeek", "https://api.deepseek.com", "openai_compatible", "deepseek-chat", None, None, True, False, True, "healthy", 2),
         (IDS["provider_zhipu"], "zhipu_glm", "智谱 GLM", "https://open.bigmodel.cn/api/paas/v4", "openai_compatible", "glm-4", "embedding-3", "glm-4v", True, True, True, "degraded", 4),
         (IDS["provider_kimi"], "kimi", "Kimi", "https://api.moonshot.cn/v1", "openai_compatible", "moonshot-v1-32k", None, None, True, False, True, "healthy", 5),
         (IDS["provider_ollama"], "ollama", "Ollama", "http://localhost:11434/v1", "openai_compatible", "qwen2.5", "bge-m3", None, True, False, False, "standby", 6),
     ]
     for provider in providers:
+        # 仅 DeepSeek 显式声明为 chat 类型；其余保持既有语义（both/embedding 由列默认与模型字段决定）
+        provider_type = "chat" if provider[1] == "deepseek" else "both"
         execute(
             """
-            INSERT INTO model_providers (id, provider, display_name, base_url, protocol, chat_model, embedding_model, vision_model, supports_stream, supports_tool_call, supports_json_mode, health_status, priority, meta_json)
-            VALUES (:id, :provider, :display_name, :base_url, :protocol, :chat_model, :embedding_model, :vision_model, :supports_stream, :supports_tool_call, :supports_json_mode, :health_status, :priority, CAST(:meta AS JSONB))
+            INSERT INTO model_providers (id, provider, display_name, base_url, protocol, chat_model, embedding_model, vision_model, supports_stream, supports_tool_call, supports_json_mode, health_status, priority, provider_type, meta_json)
+            VALUES (:id, :provider, :display_name, :base_url, :protocol, :chat_model, :embedding_model, :vision_model, :supports_stream, :supports_tool_call, :supports_json_mode, :health_status, :priority, :provider_type, CAST(:meta AS JSONB))
             ON CONFLICT (id) DO NOTHING
             """,
             id=provider[0],
@@ -436,6 +441,7 @@ def upgrade() -> None:
             supports_json_mode=provider[10],
             health_status=provider[11],
             priority=provider[12],
+            provider_type=provider_type,
             meta=dumps({"seed": True}),
         )
         execute(

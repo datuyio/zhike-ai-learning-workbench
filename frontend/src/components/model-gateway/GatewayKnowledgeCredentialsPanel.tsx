@@ -1490,17 +1490,17 @@ export function GatewayKnowledgeCredentialsPanel({
       notifyPage('接入模板尚未加载，请稍后重试。', 'error');
       return;
     }
-    const generic = resolveGenericRagTemplate(templates);
-    if (!generic) {
-      notifyPage('通用云端 RAG 模板未加载，请刷新页面。', 'error');
-      return;
-    }
     setIsAddingNew(true);
     setEditorTestResult(null);
     setEditorFeedback(null);
+    setGenericCustomDraft(false);
     setSelectedPresetKey(null);
     setEditingTemplateKey(null);
-    beginGenericCustomDraft(generic);
+    setFormValues({});
+    setInstanceDisplayName('');
+    setIsActive(true);
+    setSetAsDefault(true);
+    setEditorIconFile(undefined);
   }
 
   const visibleTemplates = useMemo(

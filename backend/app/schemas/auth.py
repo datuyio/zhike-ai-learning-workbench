@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -9,11 +11,12 @@ class LoginRequest(BaseModel):
 
 
 class RegisterRequest(BaseModel):
-    """注册请求参数。"""
+    """注册请求参数；role 决定注册为学习端学生还是助教端教师。"""
 
     name: str = Field(min_length=1, max_length=120)
     email: str
     password: str = Field(min_length=8, max_length=128)
+    role: Literal["student", "ta"] = "student"
 
 
 class UpdateMeRequest(BaseModel):

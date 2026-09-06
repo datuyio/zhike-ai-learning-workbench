@@ -5,7 +5,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, TypedDict, cast
+from typing import Any, Counter, TypedDict, cast
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session

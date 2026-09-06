@@ -5,6 +5,11 @@ import sys
 
 import uvicorn
 
+from app.core.config import load_project_env
+
+# 开发入口同样注入 .env，保证 reload 主进程环境完整
+load_project_env()
+
 if __name__ == "__main__":
     reload_delay = 1.0 if sys.platform == "win32" else 0.5
     uvicorn.run(

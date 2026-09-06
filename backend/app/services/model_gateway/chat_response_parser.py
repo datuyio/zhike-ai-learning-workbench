@@ -25,6 +25,48 @@ def extract_chat_answer(data: dict[str, Any]) -> str:
         return json.dumps(data, ensure_ascii=False)[:2000]
 
 
+def extract_chat_tool_calls(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """从 OpenAI 兼容响应中提取工具调用列表（function calling）。
+
+    参数:
+        data: 模型供应商返回的 JSON 字典，通常包含
+              ``choices[0].message.tool_calls``。
+
+    返回:
+        标准化后的工具调用列表，每项含 ``id``、``name``、``arguments``（已解析
+        为 dict）；无工具调用或结构不符时返回空列表。
+    """
+    try:
+        message = data["choices"][0]["message"]
+    except (KeyError, IndexError, TypeError) as exc:
+        logger.debug("模型响应未匹配 OpenAI choices 格式，无法提取工具调用: %s", exc, exc_info=True)
+        return []
+    raw_calls = message.get("tool_calls")
+    if not isinstance(raw_calls, list):
+        return []
+    normalized: list[dict[str, Any]] = []
+    for raw in raw_calls:
+        if not isinstance(raw, dict):
+            continue
+        function = raw.get("function") or {}
+        name = function.get("name")
+        if not name:
+            continue
+        args_raw = function.get("arguments") or "{}"
+        try:
+            args = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
+        except (json.JSONDecodeError, TypeError):
+            args = {}
+        if not isinstance(args, dict):
+            args = {}
+        normalized.append({
+            "id": raw.get("id") or f"call_{name}",
+            "name": str(name),
+            "arguments": args,
+        })
+    return normalized
+
+
 def extract_sse_delta(line: str) -> str | None:
     """从 OpenAI 兼容 SSE 行中提取增量文本。
 

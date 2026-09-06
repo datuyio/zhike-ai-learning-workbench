@@ -228,10 +228,10 @@ async def _check_chat_capability(
         raise RuntimeError("缺少 Chat 模型")
     if not config.api_key and config.provider != "ollama":
         raise RuntimeError("缺少 API Key")
-    answer, usage = await request_chat_once(
+    answer, _tool_calls, usage = await request_chat_once(
         config=config,
         messages=[{"role": "user", "content": _HEALTH_CHECK_CHAT_USER}],
-        temperature=0,
+        temperature=0.1,
         max_tokens=_HEALTH_CHECK_CHAT_MAX_TOKENS,
         json_mode=False,
         stream=False,

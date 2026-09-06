@@ -1,12 +1,23 @@
 from functools import cached_property
 from pathlib import Path
 
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 MIN_PRODUCTION_SECRET_LENGTH = 32
+
+
+def load_project_env() -> None:
+    """把项目根目录 .env 注入进程环境变量，供 os.getenv 类读取方使用。
+
+    背景：pydantic-settings 只把 .env 的值绑定到 Settings 字段，不会写入 os.environ；
+    而模型网关等模块通过 os.getenv 读取 API Key（如 DEEPSEEK_API_KEY），
+    若不注入会导致运行时判定"缺少 API Key"。默认不覆盖进程已有的同名环境变量。
+    """
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
 
 
 def _secret_weak_reason(value: str, blocked_values: set[str]) -> str | None:
@@ -59,6 +70,18 @@ class Settings(BaseSettings):
     DEFAULT_CHAT_MODEL: str = "deepseek-chat"
     DEFAULT_EMBEDDING_MODEL: str = "bge-m3"
     EMBEDDING_DIM: int = 384
+    # 本地知识库配置；缓存目录通过环境变量覆盖，避免把模型权重提交到仓库。
+    LOCAL_EMBEDDING_MODEL: str = "BAAI/bge-small-zh-v1.5"
+    LOCAL_EMBEDDING_DIMENSION: int = 512
+    LOCAL_EMBEDDING_CACHE_DIR: str = "./storage/models"
+    LOCAL_EMBEDDING_DEVICE: str = "cpu"
+    LOCAL_KNOWLEDGE_CHUNK_SIZE: int = 1200
+    LOCAL_KNOWLEDGE_CHUNK_OVERLAP: int = 150
+    # 分块器版本标识，用于追踪切片来源；"page-paragraph-v1" 为旧版字符级，"sentence-window-v2" 为句子级滑动窗口
+    LOCAL_KNOWLEDGE_CHUNKER_VERSION: str = "sentence-window-v2"
+    LOCAL_KNOWLEDGE_BM25_WEIGHT: float = 0.3
+    LOCAL_KNOWLEDGE_VECTOR_WEIGHT: float = 0.7
+    LOCAL_KNOWLEDGE_SNIPPET_SIZE: int = 800
     RAG_RETRIEVAL_LIMIT: int = 5
     RAG_RETRIEVAL_MIN_SCORE: float = 0.65
     RAG_BACKEND: str = "iflytek_chatdoc"
@@ -70,6 +93,8 @@ class Settings(BaseSettings):
     CHATDOC_WEBHOOK_PATH: str = "/api/v1/webhooks/chatdoc/status"
     CHATDOC_WEBHOOK_VERIFY_SIGNATURE: bool = False
     MODEL_GATEWAY_BASE_URL: str = "https://api.deepseek.com"
+    # 可选出站代理，例如 http://127.0.0.1:1080；留空时使用系统网络直连。
+    MODEL_GATEWAY_PROXY_URL: str | None = None
     MODEL_GATEWAY_TIMEOUT_SECONDS: float = 60.0
     MODEL_GATEWAY_MAX_TOKENS: int = 1200
     MODEL_GATEWAY_TEMPERATURE: float = 0.2
@@ -86,6 +111,12 @@ class Settings(BaseSettings):
     MODEL_GATEWAY_FAILURE_THRESHOLD: int = 3
     MODEL_GATEWAY_HEALTH_CHECK_INTERVAL_SECONDS: int = 600
     MODEL_GATEWAY_HEALTH_COOLDOWN_SECONDS: int = 300
+
+    # 代码沙箱：后端转发到 Node + Pyodide 微服务执行用户代码
+    SANDBOX_SERVICE_URL: str = "http://127.0.0.1:8003"
+    SANDBOX_EXECUTION_TIMEOUT_SECONDS: float = 10.0
+    SANDBOX_MAX_CODE_BYTES: int = 64 * 1024
+    SANDBOX_RATE_LIMIT_PER_MINUTE: int = 20
 
     # 文档解析/向量化由讯飞 ChatDoc 云端完成（PDF / TXT / MD）
     RESOURCE_GENERATION_WORKER_ENABLED: bool = True

@@ -146,18 +146,18 @@ export function GlobalHeader(): JSX.Element {
           <NavLink
             to="/dashboard"
             className="global-header__logo"
-            title="智课工坊工作台"
+            title="智课未来工作台"
             onClick={() => {
               closeHistoryWorkspace();
               closeCanvas();
               navigate('/dashboard');
             }}
           >
-            <img src={logoUrl} alt="智课工坊" />
+            <img src={logoUrl} alt="智课未来" />
           </NavLink>
 
           <nav className="global-header__breadcrumb" aria-label="当前页面">
-            <span className="global-header__breadcrumb-workspace">智课工坊</span>
+            <span className="global-header__breadcrumb-workspace">智课未来</span>
             <span className="global-header__breadcrumb-sep" aria-hidden="true">
               /
             </span>

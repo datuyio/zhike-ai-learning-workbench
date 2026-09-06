@@ -14,7 +14,9 @@ from app.schemas.course import (
     CurrentCourseUpdateResponse,
     UserCourseListResponse,
 )
+from app.schemas.knowledge_cloud import CoursesWithKnowledgeResponse
 from app.services.course.repository import CourseRepository
+from app.services.knowledge.repository import KnowledgeRepository
 
 router = APIRouter()
 
@@ -29,6 +31,17 @@ async def my_courses(current_user: CurrentUser = Depends(get_current_user), db: 
 async def list_courses(db: Session = Depends(get_db)) -> CourseListResponse:
     """返回已发布课程列表。"""
     return CourseListResponse(items=CourseRepository(db).list_courses())
+
+
+@router.get("/courses/with-knowledge", response_model=CoursesWithKnowledgeResponse)
+async def courses_with_knowledge(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> CoursesWithKnowledgeResponse:
+    """返回当前用户可访问且已具备可检索知识库的课程。"""
+    return CoursesWithKnowledgeResponse.model_validate(
+        KnowledgeRepository(db).get_courses_with_knowledge(current_user.id)
+    )
 
 
 @router.get("/courses/{course_id}", response_model=Course)

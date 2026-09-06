@@ -118,9 +118,9 @@ function PathStatusIcon({ status }: { status?: string }) {
 
 function JourneyIllustration() {
   return (
-    <div className="relative min-h-[220px] overflow-hidden rounded-lg border border-[#E6ECF7] bg-[linear-gradient(135deg,#F8FBFF,#FFFFFF_54%,#FFF8EF)] p-6">
-      <div className="absolute left-8 top-8 h-24 w-24 rounded-full border border-[#DDE8FF] bg-white/70" />
-      <div className="absolute bottom-8 right-10 h-28 w-28 rounded-full border border-[#FFE3C2] bg-[#FFF4E5]/70" />
+    <div className="dashboard-journey-illustration relative min-h-[220px] overflow-hidden rounded-lg border border-[#E6ECF7] bg-[linear-gradient(135deg,#F8FBFF,#FFFFFF_54%,#FFF8EF)] p-6">
+      <div className="dashboard-journey-illustration__ring absolute left-8 top-8 h-24 w-24 rounded-full border border-[#DDE8FF] bg-white/70" />
+      <div className="dashboard-journey-illustration__ring dashboard-journey-illustration__ring--warm absolute bottom-8 right-10 h-28 w-28 rounded-full border border-[#FFE3C2] bg-[#FFF4E5]/70" />
       <div className="relative mx-auto flex max-w-sm flex-col items-center text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#111827] text-white shadow-[0_18px_42px_rgba(17,24,39,0.18)]">
           <Route size={28} />
@@ -129,7 +129,7 @@ function JourneyIllustration() {
         <p className="mt-2 text-sm leading-6 text-[#667085]">{copy.journeyDescription}</p>
         <div className="mt-6 grid w-full grid-cols-3 gap-2">
           {config.journeyMilestones.map((item, index) => (
-            <div key={item} className="rounded-lg border border-white bg-white/80 px-3 py-2 text-xs font-semibold text-[#344054] shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
+            <div key={item} className="dashboard-milestone rounded-lg border border-white bg-white/80 px-3 py-2 text-xs font-semibold text-[#344054] shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
               <span className="mr-1 text-[#2F6BFF]">{index + 1}</span>
               {item}
             </div>
@@ -148,14 +148,14 @@ function GeneralLearningDashboard() {
   ] as const;
 
   return (
-    <div className="min-h-[calc(100vh-120px)] rounded-[28px] p-8">
+    <div className="dashboard-home dashboard-home--general min-h-[calc(100vh-120px)] rounded-[28px] p-8">
       <div className="mx-auto max-w-4xl">
         <PageHeader
           title="通用学习助手"
           subtitle="不绑定具体课程，可直接提问、规划学习、生成资料。学习画像沉淀在全局 scope；如需课程 RAG、路径与资源任务，请在顶部选择课程。"
         />
         <PageHeaderToolbar className="!justify-start">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#2F6BFF] shadow-[0_10px_30px_rgba(47,107,255,0.08)]">
+          <div className="dashboard-home__chip inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#2F6BFF] shadow-[0_10px_30px_rgba(47,107,255,0.08)]">
             <Sparkles size={14} />
             通用学习模式
           </div>
@@ -165,7 +165,7 @@ function GeneralLearningDashboard() {
             <Link
               key={title}
               to={to}
-              className="rounded-2xl border border-[#E6ECF7] bg-white/90 p-5 shadow-[0_16px_44px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-[#D7E2FF]"
+              className="dashboard-action-card rounded-2xl border border-[#E6ECF7] bg-white/90 p-5 shadow-[0_16px_44px_rgba(15,23,42,0.06)] transition will-change-transform hover:-translate-y-0.5 hover:border-[#D7E2FF]"
             >
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEF5FF] text-[#2F6BFF]">
                 <Icon size={22} />
@@ -218,21 +218,21 @@ export function DashboardPage(): JSX.Element {
   }
 
   return (
-    <div className="relative mx-auto max-w-[1480px] space-y-5 rounded-[28px] p-5 md:p-7">
+    <div className="dashboard-home dashboard-home--course relative mx-auto max-w-[1480px] space-y-5 rounded-[28px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_32%),linear-gradient(180deg,_rgba(255,255,255,0.96),_rgba(247,250,255,0.96))] p-5 shadow-[0_24px_72px_rgba(15,23,42,0.06)] md:p-7">
       <PageHeader title={copy.pageTitle} subtitle={copy.pageSubtitle} />
       <PageHeaderToolbar>
-        <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#2F6BFF] shadow-[0_10px_30px_rgba(47,107,255,0.08)]">
+        <div className="dashboard-home__chip inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#2F6BFF] shadow-[0_10px_30px_rgba(47,107,255,0.08)]">
           <Sparkles size={14} />
           {copy.pageBadge}
         </div>
-        <div className="rounded-lg border border-white bg-white/82 px-4 py-3 text-sm text-[#667085] shadow-[0_16px_44px_rgba(15,23,42,0.06)]">
+        <div className="dashboard-home__meta rounded-lg border border-slate-200/80 bg-white/85 px-4 py-3 text-sm text-[#667085] shadow-[0_12px_32px_rgba(15,23,42,0.04)]">
           <span className="font-semibold text-[#111827]">{currentCourseTitle}</span>
           <span className="mx-2 text-[#D0D5DD]">/</span>
           {copy.courseFocusPrefix}{currentNode?.title ?? copy.courseFocusFallback}
         </div>
       </PageHeaderToolbar>
 
-      <section className="overflow-hidden rounded-lg border border-[#D7E2FF] bg-[linear-gradient(135deg,#FFFFFF,#F5F9FF_54%,#EEF5FF)] shadow-[0_28px_90px_rgba(47,107,255,0.14)]">
+      <section className="dashboard-home__hero-card overflow-hidden rounded-[22px] border border-[#D7E2FF] bg-[linear-gradient(135deg,#FFFFFF,#F5F9FF_54%,#EEF5FF)] shadow-[0_28px_90px_rgba(47,107,255,0.12)]">
         {path.isError ? (
           <div className="p-8">
             <ErrorState />
@@ -244,7 +244,7 @@ export function DashboardPage(): JSX.Element {
           >
             <div className="flex min-w-0 flex-col justify-between gap-6">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                <div className="dashboard-home__ready-pill inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                   <Zap size={14} />
                   {copy.planReadyPrefix} {config.dailyPlanStepCount} {copy.planReadySuffix}
                 </div>
@@ -261,7 +261,7 @@ export function DashboardPage(): JSX.Element {
                   </div>
                   <Link
                     to={ctaTarget}
-                    className="group inline-flex min-h-16 items-center justify-center gap-3 rounded-lg bg-[#2F6BFF] px-7 py-4 text-base font-bold text-white shadow-[0_18px_42px_rgba(47,107,255,0.34)] transition hover:-translate-y-0.5 hover:bg-[#245BDE] focus:outline-none focus:ring-4 focus:ring-[#2F6BFF]/20"
+                    className="dashboard-home__primary-action group inline-flex min-h-16 items-center justify-center gap-3 rounded-lg bg-[#2F6BFF] px-7 py-4 text-base font-bold text-white shadow-[0_18px_42px_rgba(47,107,255,0.34)] transition hover:-translate-y-0.5 hover:bg-[#245BDE] focus:outline-none focus:ring-4 focus:ring-[#2F6BFF]/20"
                   >
                     <PlayCircle size={22} />
                     <span className="text-left">{ctaLabel}</span>
@@ -275,7 +275,7 @@ export function DashboardPage(): JSX.Element {
                   {config.metricCards.map(({ key, label, iconKey }) => {
                     const Icon = iconMap[iconKey];
                     return (
-                    <div key={label} className="rounded-lg border border-white bg-white/78 px-4 py-3 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
+                    <div key={label} className="dashboard-metric-card rounded-lg border border-white bg-white/78 px-4 py-3 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FF] text-[#2F6BFF]">
                           <Icon size={18} />
@@ -291,7 +291,7 @@ export function DashboardPage(): JSX.Element {
               )}
             </div>
 
-            <div className="rounded-lg border border-white bg-white/78 p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.78)]">
+            <div className="dashboard-coach-card rounded-lg border border-white bg-white/78 p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.78)]">
               <div className="flex items-start gap-3">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#111827] text-white">
                   <Bot size={23} />
@@ -337,7 +337,7 @@ export function DashboardPage(): JSX.Element {
                 return (
                   <div
                     key={step.key}
-                    className="relative grid items-center gap-3 rounded-lg border border-[#E6ECF7] bg-[#FBFCFF] p-4"
+                    className={`dashboard-step-card relative grid items-center gap-3 rounded-lg border border-[#E6ECF7] bg-[#FBFCFF] p-4 ${isCurrent ? 'dashboard-step-card--current' : ''}`}
                     style={{ gridTemplateColumns: 'auto minmax(min(240px, 100%), 1fr) auto' }}
                   >
                     {index < guideSteps.length - 1 && <div className="absolute left-[31px] top-[56px] hidden h-[calc(100%-20px)] w-px bg-[#D7E2FF] sm:block" />}
@@ -398,7 +398,7 @@ export function DashboardPage(): JSX.Element {
                 {nodes.slice(0, 4).map((node) => {
                   const meta = getStatusMeta(node.status);
                   return (
-                    <div key={node.id} className="rounded-lg border border-[#E6ECF7] bg-[#FBFCFF] p-3">
+                    <div key={node.id} className="dashboard-progress-card rounded-lg border border-[#E6ECF7] bg-[#FBFCFF] p-3">
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <div className="truncate text-sm font-bold text-[#111827]">{node.title}</div>
@@ -409,7 +409,7 @@ export function DashboardPage(): JSX.Element {
                         </span>
                       </div>
                       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#EEF2F7]">
-                        <div className="h-full rounded-full bg-[#2F6BFF]" style={{ width: `${clampPercent(node.mastery)}%` }} />
+                        <div className="dashboard-progress-card__bar h-full rounded-full bg-[#2F6BFF]" style={{ width: `${clampPercent(node.mastery)}%` }} />
                       </div>
                     </div>
                   );
@@ -427,7 +427,7 @@ export function DashboardPage(): JSX.Element {
         {config.secondaryLinks.map(({ label, to, iconKey }) => {
           const Icon = iconMap[iconKey];
           return (
-          <Link key={label} to={to} className="group flex items-center justify-between rounded-lg border border-white/60 bg-white/72 px-4 py-3 text-sm font-semibold text-[#344054] shadow-[0_8px_24px_rgba(15,23,42,0.025)] transition hover:-translate-y-0.5 hover:border-white hover:bg-white hover:text-[#2F6BFF] hover:shadow-[0_16px_38px_rgba(47,107,255,0.10)]">
+          <Link key={label} to={to} className="dashboard-secondary-link group flex items-center justify-between rounded-lg border border-white/60 bg-white/72 px-4 py-3 text-sm font-semibold text-[#344054] shadow-[0_8px_24px_rgba(15,23,42,0.025)] transition hover:-translate-y-0.5 hover:border-white hover:bg-white hover:text-[#2F6BFF] hover:shadow-[0_16px_38px_rgba(47,107,255,0.10)]">
             <span className="inline-flex items-center gap-2">
               <Icon size={17} className="text-[#2F6BFF]" />
               {label}

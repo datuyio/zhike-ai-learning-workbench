@@ -6,6 +6,7 @@ from typing import Any
 import httpx
 
 from app.core.config import settings
+from app.services.model_gateway.http_client import model_gateway_client_kwargs
 
 
 def rerank_url(base_url: str) -> str:
@@ -55,7 +56,7 @@ async def call_rerank_api(
     payload: dict[str, Any] = {"model": model, "query": query, "documents": list(documents)}
     if top_n:
         payload["top_n"] = top_n
-    async with httpx.AsyncClient(timeout=settings.MODEL_GATEWAY_TIMEOUT_SECONDS) as client:
+    async with httpx.AsyncClient(**model_gateway_client_kwargs(base_url, settings.MODEL_GATEWAY_TIMEOUT_SECONDS)) as client:
         response = await client.post(rerank_url(base_url), headers=headers, json=payload)
         response.raise_for_status()
         data = response.json()

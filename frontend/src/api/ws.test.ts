@@ -58,6 +58,7 @@ describe('WebSocket 地址构造', () => {
   afterEach(() => {
     clearAuthStorage();
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it('构造地址时不在查询、hash 或路径中暴露认证 token', () => {
@@ -88,6 +89,16 @@ describe('WebSocket 地址构造', () => {
     expect(new URL(url).hash).toBe('');
     expect(new URL(resourceUrl).search).toBe('');
     expect(new URL(resourceUrl).hash).toBe('');
+  });
+
+  it('子路径部署（base=/zhike/）下，相对 API 地址推导的 WebSocket 地址带上子路径前缀', async () => {
+    vi.resetModules();
+    vi.stubEnv('BASE_URL', '/zhike/');
+    const wsModule = await import('./ws');
+    stubBrowserWindow();
+
+    expect(wsModule.buildAiWebSocketUrl('conv-1')).toBe('wss://example.test/zhike/ws/ai/conv-1');
+    expect(wsModule.buildResourceWebSocketUrl('task-1')).toBe('wss://example.test/zhike/ws/resources/task-1');
   });
 });
 

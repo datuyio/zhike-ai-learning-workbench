@@ -20,7 +20,6 @@ import {
 import { api } from '../../api/endpoints';
 import { AdminMetricCard, AdminPageHeader, AdminPageShell } from '../../components/admin/AdminScaffold';
 import {
-  buildLoginBackgroundStyle,
   DEFAULT_LOGIN_BACKGROUND_SETTINGS,
   normalizeLoginBackgroundSettings,
 } from '../../config/loginBackground';
@@ -78,18 +77,6 @@ function formatUploadSize(size: number): string {
 
 function formatAssetSize(size?: number | null): string {
   return typeof size === 'number' ? formatUploadSize(size) : '内置资源';
-}
-
-function BackgroundPreviewMedia({ settings }: { settings: LoginBackgroundSettings }): JSX.Element | null {
-  if (!settings.enabled || !settings.media_url.trim()) return null;
-  if (settings.media_type === 'video') {
-    return (
-      <video className="auth-page__video interface-settings-preview__media" muted playsInline loop autoPlay preload="metadata">
-        <source src={settings.media_url} type={settings.media_url.toLowerCase().includes('.webm') ? 'video/webm' : 'video/mp4'} />
-      </video>
-    );
-  }
-  return <img className="auth-page__video interface-settings-preview__media" src={settings.media_url} alt="" />;
 }
 
 function ServerAssetPreview({ asset }: { asset: LoginBackgroundMediaAsset }): JSX.Element {
@@ -153,7 +140,6 @@ export function InterfaceSettingsPage(): JSX.Element {
     }
   }, [settingsQuery.data]);
 
-  const previewStyle = useMemo(() => buildLoginBackgroundStyle(draft), [draft]);
   const saveMutation = useMutation({
     mutationFn: () => {
       const payload = cleanLoginBackgroundDraft(draft);
@@ -409,25 +395,32 @@ export function InterfaceSettingsPage(): JSX.Element {
             <span><Eye size={15} /> 登录页预览</span>
             <strong>{draft.fit === 'cover' ? '铺满画布' : '完整显示'}</strong>
           </div>
-          <div className="interface-settings-preview auth-page" style={previewStyle}>
-            <div className="auth-page__video-layer">
-              <BackgroundPreviewMedia settings={draft} />
-              <div className="auth-page__video-vignette" />
+          <div className="interface-settings-preview auth-page">
+            <div className="interface-settings-preview__dynamic" aria-hidden="true">
+              <div className="interface-settings-preview__grid" />
+              <div className="interface-settings-preview__hub">
+                <span>AI</span>
+                <i />
+                <i />
+                <i />
+              </div>
+              <div className="interface-settings-preview__panel interface-settings-preview__panel--one" />
+              <div className="interface-settings-preview__panel interface-settings-preview__panel--two" />
             </div>
             <div className="interface-settings-preview__content">
               <header className="interface-settings-preview__nav">
-                <span>智课工坊</span>
+                <span>智课未来</span>
                 <div><b>登录</b><em>创建账号</em></div>
               </header>
               <div className="interface-settings-preview__body">
                 <div>
-                  <span className="interface-settings-preview__eyebrow">课程知识库 · 学习画像 · 多智能体生成</span>
-                  <h2 className="auth-display">知识噪声之外，<em>生成学习路径。</em></h2>
-                  <p>面向高校课程学习场景，把课程知识、学习画像、路径规划、资源生产和质量校验放进同一个可追踪的工作台。</p>
+                  <span className="interface-settings-preview__eyebrow">私有化 · 可信问答 · 学练评闭环</span>
+                  <h2 className="auth-display">私有化 AI 学伴，<em>懂课程，会进化。</em></h2>
+                  <p>本地 AI、混合检索、多智能体编排和学情画像串成可信闭环，覆盖学习、教学与管理。</p>
                 </div>
                 <aside>
                   <span>账号入口</span>
-                  <strong>登录智课工坊</strong>
+                  <strong>登录智课未来</strong>
                   <i />
                   <i />
                   <button type="button">登录工作台</button>

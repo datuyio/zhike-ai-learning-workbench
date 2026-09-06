@@ -60,10 +60,17 @@ class CourseRetriever:
         threshold = settings.RAG_RETRIEVAL_MIN_SCORE
         refused, _ = should_refuse_low_confidence(citations, require_citations=True, threshold=threshold)
         hit = bool(citations) and top_score >= threshold and not refused
+        # concept_code 为空时用显式 NULL 条件，避免 PostgreSQL 无法推断 $N 参数类型
+        # （AmbiguousParameter）而失败，进而 rollback 掉同事务里刚创建的会话记录。
+        concept_join = (
+            "LEFT JOIN course_concepts cc ON cc.course_id = c.id AND cc.code = :concept_code"
+            if concept_code
+            else "LEFT JOIN course_concepts cc ON cc.course_id = c.id AND FALSE"
+        )
         try:
             db.execute(
                 text(
-                    """
+                    f"""
                     INSERT INTO rag_query_logs (
                         id, course_id, concept_id, intent, query_text, hit, top_score,
                         citation_count, refused, latency_ms, retrieval_scope, meta_json
@@ -72,7 +79,7 @@ class CourseRetriever:
                            :top_score, :citation_count, :refused, :latency_ms, 'course',
                            CAST(:meta_json AS JSONB)
                     FROM courses c
-                    LEFT JOIN course_concepts cc ON cc.course_id = c.id AND (:concept_code IS NULL OR cc.code = :concept_code)
+                    {concept_join}
                     WHERE c.slug = :course_slug
                     LIMIT 1
                     """

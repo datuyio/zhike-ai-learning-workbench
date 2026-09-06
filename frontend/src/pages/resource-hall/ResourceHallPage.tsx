@@ -239,7 +239,7 @@ export function ResourceHallPage(): JSX.Element {
   return (
     <OverlayPageShell
       pageClassName="resource-hall-page min-h-full text-slate-950"
-      title="资源中心"
+      title="资源大厅"
       subtitle={
         hasCourse
           ? `当前课程：${currentCourseTitle || courseId}。这里把课程资源、我的生成、社区共享和画像推荐放进同一条资源流。`
