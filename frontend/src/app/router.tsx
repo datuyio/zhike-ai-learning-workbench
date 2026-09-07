@@ -47,7 +47,6 @@ const TaClassManagementPage = lazy(() => import("../pages/ta/TaClassManagementPa
 const TaResourceReviewPage = lazy(() => import("../pages/ta/TaResourceReviewPage").then((m) => ({ default: m.TaResourceReviewPage })));
 const TaAnnouncementsPage = lazy(() => import("../pages/ta/TaAnnouncementsPage").then((m) => ({ default: m.TaAnnouncementsPage })));
 const TaAiAssistantPage = lazy(() => import("../pages/ta/TaAiAssistantPage").then((m) => ({ default: m.TaAiAssistantPage })));
-const TaContinualLearningPage = lazy(() => import("../pages/ta/TaContinualLearningPage").then((m) => ({ default: m.TaContinualLearningPage })));
 
 function RouteFallback(): JSX.Element {
   return (
@@ -126,7 +125,6 @@ export const router = createBrowserRouter([
               { path: "lesson-prep", element: withSuspense(<TaLessonPrepPage />) },
               { path: "grading", element: withSuspense(<TaGradingPage />) },
               { path: "diagnosis", element: withSuspense(<TaDiagnosisPage />) },
-              { path: "continual", element: withSuspense(<TaContinualLearningPage />) },
               { path: "class-management", element: withSuspense(<TaClassManagementPage />) },
               { path: "resource-review", element: withSuspense(<TaResourceReviewPage />) },
               { path: "announcements", element: withSuspense(<TaAnnouncementsPage />) },

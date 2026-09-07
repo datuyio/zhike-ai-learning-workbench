@@ -15,9 +15,9 @@
   flex-shrink: 0;
   place-items: center;
   border-radius: 999px;
-  background: #0f172a;
+  background: linear-gradient(135deg, var(--brand-primary), #14211e);
   color: white;
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
+  box-shadow: 0 18px 38px rgba(15, 118, 110, 0.18);
 }
 
 .ai-top-status__copy {
@@ -26,7 +26,7 @@
 
 .ai-top-status__eyebrow {
   margin: 0;
-  color: #64748b;
+  color: var(--settings-muted);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -59,12 +59,12 @@
   min-width: 0;
   align-items: center;
   gap: 9px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(43, 67, 60, 0.14);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.76);
+  background: rgba(255, 253, 248, 0.88);
   padding: 0 11px 0 14px;
-  color: #0f172a;
-  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.08);
+  color: var(--settings-ink);
+  box-shadow: 0 10px 26px rgba(20, 33, 30, 0.07);
   backdrop-filter: blur(18px);
   transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
@@ -72,15 +72,15 @@
 .course-switcher__trigger:hover:not(:disabled),
 .course-switcher--open .course-switcher__trigger {
   transform: translateY(-1px);
-  border-color: rgba(14, 165, 233, 0.45);
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 18px 42px rgba(14, 165, 233, 0.16);
+  border-color: rgba(15, 118, 110, 0.34);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 36px rgba(15, 118, 110, 0.12);
 }
 
 .course-switcher__trigger:focus-visible {
   outline: 0;
-  border-color: rgba(14, 165, 233, 0.68);
-  box-shadow: 0 0 0 4px rgba(186, 230, 253, 0.7), 0 18px 42px rgba(14, 165, 233, 0.16);
+  border-color: rgba(15, 118, 110, 0.56);
+  box-shadow: 0 0 0 4px rgba(204, 251, 241, 0.72), 0 16px 36px rgba(15, 118, 110, 0.12);
 }
 
 .course-switcher__trigger:disabled {
@@ -95,8 +95,8 @@
   flex: 0 0 auto;
   place-items: center;
   border-radius: 999px;
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
 }
 
 .course-switcher__copy {
@@ -146,12 +146,12 @@
   max-width: calc(100vw - 2rem);
   min-width: 100%;
   overflow: hidden;
-  border: 1px solid rgba(203, 213, 225, 0.86);
+  border: 1px solid rgba(43, 67, 60, 0.16);
   border-radius: 8px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)),
-    radial-gradient(circle at 12% 0%, rgba(14, 165, 233, 0.12), transparent 12rem);
-  box-shadow: 0 24px 72px rgba(15, 23, 42, 0.18);
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(246, 249, 245, 0.97)),
+    radial-gradient(circle at 12% 0%, rgba(15, 118, 110, 0.1), transparent 12rem);
+  box-shadow: 0 24px 72px rgba(20, 33, 30, 0.16);
   backdrop-filter: blur(22px);
 }
 
@@ -159,7 +159,7 @@
   display: block;
   height: 3px;
   content: "";
-  background: linear-gradient(90deg, #0ea5e9, #10b981, #f59e0b);
+  background: linear-gradient(90deg, var(--brand-primary), #22c55e, var(--brand-accent));
 }
 
 .course-switcher__option {
@@ -183,24 +183,24 @@
 .course-switcher__option:hover,
 .course-switcher__option:focus-visible {
   outline: 0;
-  background: rgba(239, 246, 255, 0.86);
-  color: #0f172a;
+  background: rgba(229, 246, 242, 0.86);
+  color: var(--settings-ink);
 }
 
 .course-switcher__option--active {
   background:
-    linear-gradient(90deg, rgba(14, 165, 233, 0.12), rgba(255, 255, 255, 0.96) 58%),
+    linear-gradient(90deg, rgba(15, 118, 110, 0.13), rgba(255, 255, 255, 0.96) 58%),
     #ffffff;
-  color: #0f172a;
-  box-shadow: inset 3px 0 0 #38bdf8;
+  color: var(--settings-ink);
+  box-shadow: inset 3px 0 0 var(--brand-primary);
 }
 
 .course-switcher__option--active:hover,
 .course-switcher__option--active:focus-visible {
   background:
-    linear-gradient(90deg, rgba(14, 165, 233, 0.16), rgba(239, 246, 255, 0.96) 62%),
+    linear-gradient(90deg, rgba(15, 118, 110, 0.16), rgba(229, 246, 242, 0.96) 62%),
     #ffffff;
-  color: #0f172a;
+  color: var(--settings-ink);
 }
 
 .course-switcher__option-icon {
@@ -209,13 +209,13 @@
   height: 30px;
   place-items: center;
   border-radius: 8px;
-  background: rgba(226, 232, 240, 0.82);
-  color: #2563eb;
+  background: rgba(229, 246, 242, 0.9);
+  color: var(--brand-primary);
 }
 
 .course-switcher__option--active .course-switcher__option-icon {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: #ccfbf1;
+  color: #0f766e;
 }
 
 .course-switcher__option-copy {

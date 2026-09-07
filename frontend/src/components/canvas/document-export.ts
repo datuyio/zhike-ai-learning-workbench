@@ -179,7 +179,7 @@ async function buildDocxBlob(title: string, markdown: string): Promise<Blob> {
 
   const doc = new Document({
     title,
-    creator: '知课 AI 个性化学习工作台',
+    creator: '智课未来',
     description: '由 ArtifactCanvas 通过 docx 库导出',
     numbering: {
       config: [
@@ -253,8 +253,8 @@ async function buildPptxFile(title: string, markdown: string): Promise<void> {
   const { default: pptxgen } = await import('pptxgenjs');
   const pptx = new pptxgen();
   pptx.layout = 'LAYOUT_WIDE';
-  pptx.author = '知课 AI 个性化学习工作台';
-  pptx.company = '知课 AI 个性化学习工作台';
+  pptx.author = '智课未来';
+  pptx.company = '智课未来';
   pptx.subject = '学习资源导出';
   pptx.title = title || '学习资源';
   pptx.theme = {
@@ -303,7 +303,7 @@ async function buildPptxFile(title: string, markdown: string): Promise<void> {
         paraSpaceAfter: 8,
       },
     );
-    slide.addText(`知课 AI · ${index + 1}/${slides.length}`, {
+    slide.addText(`智课未来 · ${index + 1}/${slides.length}`, {
       x: 0.7,
       y: 6.95,
       w: 11.8,

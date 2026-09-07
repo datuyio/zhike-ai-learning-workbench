@@ -101,20 +101,20 @@ def _verify_legacy_sha256_password(password: str, stored_hash: str) -> bool:
     return hmac.compare_digest(actual, expected)
 
 
-def verify_password(password: str, stored_hash: str | None) -> bool:
-    """校验用户密码。
-
-    新密码使用 Argon2id；旧的 `sha256$...` 哈希仅作为兼容路径保留。
-    """
-    if not stored_hash:
-        return False
-    if stored_hash.startswith("sha256$"):
-        return _verify_legacy_sha256_password(password, stored_hash)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """验证密码"""
+    # 如果是 bcrypt 格式（以 $2b$ 开头），使用 bcrypt 验证
+    if hashed_password.startswith('$2b$'):
+        import bcrypt
+        try:
+            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        except Exception:
+            return False
+    # 否则使用 Argon2
     try:
-        return _password_hasher.verify(stored_hash, password)
-    except (VerificationError, VerifyMismatchError):
+        return _password_hasher.verify(hashed_password, plain_password)
+    except Exception:
         return False
-
 
 def issue_session_token() -> str:
     """签发随机会话令牌，明文只返回给当前登录响应。"""

@@ -31,7 +31,7 @@ export function TaDashboardPage(): JSX.Element {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="ta-dashboard mx-auto w-full max-w-6xl">
       <PageHeader
         title="助教工作台"
         subtitle="概览班级情况、待办批改任务与学情动态，快速进入各工作模块。"
@@ -43,12 +43,12 @@ export function TaDashboardPage(): JSX.Element {
         <ErrorState label={(query.error as Error)?.message || '工作台数据加载失败'} />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="ta-dashboard__metrics grid grid-cols-2 gap-4 lg:grid-cols-4">
             {cards.map((card) => (
-              <div key={card.label} className="rounded-lg border border-zinc-200 bg-white p-5">
+              <div key={card.label} className="ta-dashboard__metric-card rounded-lg border border-zinc-200 bg-white p-5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-zinc-500">{card.label}</span>
-                  <span className={`flex h-8 w-8 items-center justify-center rounded-md text-white ${card.tone}`}>
+                  <span className={`ta-dashboard__metric-icon flex h-8 w-8 items-center justify-center rounded-md text-white ${card.tone}`}>
                     <card.icon size={16} />
                   </span>
                 </div>
@@ -57,8 +57,8 @@ export function TaDashboardPage(): JSX.Element {
             ))}
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
-            <div className="rounded-lg border border-zinc-200 bg-white p-5 xl:col-span-2">
+          <div className="ta-dashboard__main-grid mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
+            <div className="ta-dashboard__panel ta-dashboard__panel--chart rounded-lg border border-zinc-200 bg-white p-5 xl:col-span-2">
               <h2 className="text-sm font-medium text-zinc-700">近 7 天活跃学生</h2>
               <div className="mt-3 h-52">
                 <ResponsiveContainer width="100%" height="100%">
@@ -79,15 +79,15 @@ export function TaDashboardPage(): JSX.Element {
               </div>
             </div>
 
-            <div className="rounded-lg border border-zinc-200 bg-white p-5">
+            <div className="ta-dashboard__panel ta-dashboard__panel--tasks rounded-lg border border-zinc-200 bg-white p-5">
               <h2 className="text-sm font-medium text-zinc-700">待办任务</h2>
               {(stats?.recent_tasks ?? []).length === 0 ? (
-                <p className="mt-4 text-sm text-zinc-400">暂无待办任务</p>
+                <p className="ta-dashboard__empty mt-4 text-sm text-zinc-400">暂无待办任务</p>
               ) : (
                 <ul className="mt-3 space-y-2">
                   {(stats?.recent_tasks ?? []).slice(0, 6).map((task) => (
                     <li key={`${task.type}-${task.id}`}>
-                      <Link to={task.href} className="block rounded-md border border-zinc-100 px-3 py-2 transition-colors hover:border-zinc-300">
+                      <Link to={task.href} className="ta-dashboard__task-link block rounded-md border border-zinc-100 px-3 py-2 transition-colors hover:border-zinc-300">
                         <div className="text-sm text-zinc-800">{task.title}</div>
                         <div className="mt-0.5 text-xs text-zinc-400">{task.meta}</div>
                       </Link>
@@ -98,21 +98,21 @@ export function TaDashboardPage(): JSX.Element {
             </div>
           </div>
 
-          <div className="mt-4 rounded-lg border border-zinc-200 bg-white p-5">
+          <div className="ta-dashboard__panel ta-dashboard__panel--alerts mt-4 rounded-lg border border-zinc-200 bg-white p-5">
             <h2 className="text-sm font-medium text-zinc-700">未处理预警</h2>
             {(stats?.recent_alerts ?? []).length === 0 ? (
-              <p className="mt-4 text-sm text-zinc-400">暂无活跃预警，班级状态良好</p>
+              <p className="ta-dashboard__empty mt-4 text-sm text-zinc-400">暂无活跃预警，班级状态良好</p>
             ) : (
               <ul className="mt-3 divide-y divide-zinc-100">
                 {(stats?.recent_alerts ?? []).map((alert) => (
-                  <li key={alert.id} className="flex items-center justify-between gap-4 py-2.5">
+                  <li key={alert.id} className="ta-dashboard__alert-row flex items-center justify-between gap-4 py-2.5">
                     <span className="flex items-center gap-2 text-sm text-zinc-800">
                       <span className={`rounded px-1.5 py-0.5 text-xs ${SEVERITY_STYLE[alert.severity] ?? SEVERITY_STYLE.low}`}>
                         {SEVERITY_LABEL[alert.severity] ?? alert.severity}
                       </span>
                       {alert.title}
                     </span>
-                    <Link to="/ta/diagnosis" className="shrink-0 text-xs text-blue-600 hover:underline">去处理</Link>
+                    <Link to="/ta/diagnosis" className="ta-dashboard__alert-action shrink-0 text-xs text-blue-600 hover:underline">去处理</Link>
                   </li>
                 ))}
               </ul>

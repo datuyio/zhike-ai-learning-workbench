@@ -2,8 +2,19 @@
   color-scheme: light;
   --font-sans: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
   --font-display: "Noto Serif SC", "Songti SC", "STSong", serif;
-  --settings-ink: #16211d;
-  --settings-muted: #65726c;
+  --settings-ink: #14211e;
+  --settings-muted: #63716c;
+  --brand-primary: #0f766e;
+  --brand-primary-strong: #115e59;
+  --brand-primary-soft: #e5f6f2;
+  --brand-accent: #d97706;
+  --brand-accent-soft: #fff7ed;
+  --brand-info: #2563eb;
+  --brand-danger: #dc2626;
+  --brand-surface: #fffdf8;
+  --brand-surface-muted: #f5f7f3;
+  --brand-border: rgba(43, 67, 60, 0.14);
+  --brand-shadow-soft: 0 10px 30px rgba(20, 33, 30, 0.06);
   --page-header-ink: var(--settings-ink);
   --page-header-muted: var(--settings-muted);
   --page-header-title-size: 22px;
@@ -34,7 +45,7 @@
   --sidebar-width-expanded: 240px;
   --sidebar-width-collapsed: 0px;
   --sidebar-width: var(--sidebar-width-expanded);
-  --sidebar-peek-shadow: 1px 0 32px rgba(15, 23, 42, 0.08), 4px 0 24px rgba(15, 23, 42, 0.06);
+  --sidebar-peek-shadow: 1px 0 32px rgba(20, 33, 30, 0.08), 4px 0 24px rgba(20, 33, 30, 0.06);
   --sidebar-transition-duration: 0.25s;
   --sidebar-transition-easing: cubic-bezier(0.22, 1, 0.36, 1);
   --sidebar-auto-hide-delay: 280ms;
@@ -45,46 +56,46 @@
   --sidebar-toggle-size: 28px;
   --sidebar-item-height: 36px;
   --sidebar-group-gap: 12px;
-  --sidebar-item-hover-bg: rgba(55, 53, 47, 0.08);
-  --sidebar-item-active-bg: rgba(55, 53, 47, 0.08);
+  --sidebar-item-hover-bg: rgba(15, 118, 110, 0.09);
+  --sidebar-item-active-bg: rgba(15, 118, 110, 0.12);
   --sidebar-item-active-color: var(--settings-ink);
-  --sidebar-surface-bg: #f7f7f5;
+  --sidebar-surface-bg: #f4f6f1;
   --sidebar-surface-blur: none;
   --sidebar-edge-shadow: none;
   /* overlay 内层卡片：主画布已承载玻璃底，卡片仅保留边框与柔阴影 */
-  --page-inner-border: rgba(255, 255, 255, 0.52);
-  --page-inner-shadow: 0 2px 24px rgba(15, 23, 42, 0.04);
-  --page-inner-radius: 14px;
-  --page-inner-surface: transparent;
-  --page-inner-surface-muted: transparent;
+  --page-inner-border: rgba(43, 67, 60, 0.13);
+  --page-inner-shadow: 0 8px 26px rgba(20, 33, 30, 0.05);
+  --page-inner-radius: 8px;
+  --page-inner-surface: rgba(255, 255, 255, 0.72);
+  --page-inner-surface-muted: rgba(245, 247, 243, 0.78);
   /* Global Header：Notion 风格全宽顶栏，详见 docs/layout-spec.md 第 2.11 / 2.12 节。 */
   --global-header-height: 45px;
   --global-header-content-gap: 0px;
   --floating-canvas-radius: 0px;
   --floating-canvas-border: transparent;
-  --floating-canvas-surface: #ffffff;
+  --floating-canvas-surface: var(--brand-surface);
   --floating-canvas-shadow: none;
   --glass-panel-bg: var(--sidebar-surface-bg);
   --glass-panel-border: transparent;
   --glass-panel-blur: var(--sidebar-surface-blur);
   --glass-panel-shadow: var(--sidebar-edge-shadow);
   --workspace-viewport-chrome: var(--global-header-height);
-  --global-header-bg: #ffffff;
-  --global-header-border: rgba(55, 53, 47, 0.09);
+  --global-header-bg: rgba(255, 253, 248, 0.9);
+  --global-header-border: rgba(43, 67, 60, 0.12);
   --global-header-shadow: none;
   --global-header-title-size: 14px;
   --global-header-title-weight: 500;
-  --global-header-title-color: #37352f;
+  --global-header-title-color: var(--settings-ink);
   --global-header-subtitle-size: 12px;
-  --global-header-subtitle-color: rgba(55, 53, 47, 0.65);
+  --global-header-subtitle-color: rgba(20, 33, 30, 0.62);
   --global-header-identity-gap: 0px;
   --global-header-actions-gap: 4px;
   /* 大屏内容最大宽度：背景满宽，内容区超过该宽度后居中留白，避免无限拉伸破坏比例，详见 docs/layout-spec.md 第 2.9 节。 */
   --page-content-max-width: 1400px;
   --scroller-track: transparent;
-  --scroller-track-active: #f3f4f6;
-  --scroller-thumb: #d1d5db;
-  --scroller-thumb-hover: #9ca3af;
+  --scroller-track-active: #edf2ec;
+  --scroller-thumb: #cad8d2;
+  --scroller-thumb-hover: #98aaa3;
   --scroller-ease: 250ms ease;
   --scroller-size: 7px;
   --scroller-compact-size: 6px;
@@ -95,8 +106,8 @@
   /* PC 对话消息流：滚动条与气泡间距、轻量化滚动条尺寸（详见 ai-workspace.css） */
   --chat-message-stream-pad-right: 12px;
   --chat-scroller-size: 6px;
-  --chat-scroller-thumb: #d1d5db;
-  --chat-scroller-thumb-hover: #b8bec8;
+  --chat-scroller-thumb: #cad8d2;
+  --chat-scroller-thumb-hover: #98aaa3;
 }
 
 :root {

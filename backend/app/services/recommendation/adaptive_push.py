@@ -243,7 +243,7 @@ class AdaptivePushService:
                         rule_type="assessment_driven",
                         rule_label="Rubric 评分低于阈值",
                         priority=70,
-                        title=f"补救：{"测验" if concept_title is None else concept_title} 评分不理想",
+                        title = f"补救：{'测验' if concept_title is None else concept_title} 评分不理想",
                         description=(
                             f"最近一次测评评分为 {assessment.score} 分，低于 {DEFAULT_ASSESSMENT_THRESHOLD} 分。"
                             "建议针对薄弱环节进行补救练习。"

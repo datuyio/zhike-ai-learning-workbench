@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -21,10 +20,6 @@ import {
   Users,
 } from 'lucide-react';
 import { api } from '../../api/endpoints';
-import {
-  buildLoginBackgroundStyle,
-  normalizeLoginBackgroundSettings,
-} from '../../config/loginBackground';
 import { useAppearance } from '../../hooks/useAppearance';
 import { buildWorkspaceAppearanceStyle, buildWorkspaceBackgroundLayerStyle } from '../../config/appearance';
 import { useSessionStore } from '../../stores/session.store';
@@ -39,15 +34,15 @@ type PasswordRequirement = {
 
 const DEFAULT_DEV_LOGIN_EMAIL = import.meta.env.VITE_DEV_LOGIN_EMAIL ?? 'admin@example.edu.cn';
 const productStats = [
-  { label: '课程上下文', value: '精准绑定' },
-  { label: '资源生成', value: '个性生成' },
-  { label: '学习记录', value: '全程追溯' },
+  { label: '全栈私有化', value: '数据不出校' },
+  { label: '可信问答', value: '有据可循' },
+  { label: '学教管闭环', value: '持续进化' },
 ] as const;
 
 const capabilityCards = [
-  { title: '课程级知识边界', text: '对话、资源生成和引用检索都绑定当前课程，避免跨课混用。', Icon: BookOpenCheck },
-  { title: '多角色协同生成', text: '从需求理解、资料检索到内容生成和质量校验，过程清晰可追踪。', Icon: Network },
-  { title: '学情闭环更新', text: '画像、路径、练习和资源反馈互相驱动，形成持续改进闭环。', Icon: Brain },
+  { title: '本地 AI 底座', text: '本地微调模型、Embedding、向量库与混合检索协同运行，适配校园数据边界。', Icon: BookOpenCheck },
+  { title: '低幻觉问答', text: '引用核验、低置信拒答与结构化校验，把回答建立在课程证据上。', Icon: Network },
+  { title: '闭环式成长', text: '画像、路径、资源生成和助教诊断联动，让学习与教学持续校准。', Icon: Brain },
 ] as const;
 
 function isValidEmail(email: string): boolean {
@@ -94,8 +89,45 @@ function preserveDataModeParam(target: string, search: string): string {
   return `${base}${base.includes('?') ? '&' : '?'}mock=${mock}${hash}`;
 }
 
-function resolveVideoMimeType(url: string): string {
-  return url.toLowerCase().includes('.webm') ? 'video/webm' : 'video/mp4';
+function AuthDynamicScene(): JSX.Element {
+  return (
+    <div className="auth-page__dynamic-layer" aria-hidden="true">
+      <div className="auth-page__grid-flow" />
+      <div className="auth-page__learning-hub">
+        <div className="auth-page__orbit auth-page__orbit--outer" />
+        <div className="auth-page__orbit auth-page__orbit--middle" />
+        <div className="auth-page__orbit auth-page__orbit--inner" />
+        <div className="auth-page__hub-core">
+          <span>AI</span>
+          <strong>可信学伴</strong>
+        </div>
+        <span className="auth-page__hub-node auth-page__hub-node--course">课程库</span>
+        <span className="auth-page__hub-node auth-page__hub-node--rag">RAG</span>
+        <span className="auth-page__hub-node auth-page__hub-node--profile">画像</span>
+        <span className="auth-page__hub-node auth-page__hub-node--agent">Agent</span>
+      </div>
+      <div className="auth-page__data-panel auth-page__data-panel--top">
+        <span>本地模型</span>
+        <strong>QLoRA</strong>
+        <i />
+      </div>
+      <div className="auth-page__data-panel auth-page__data-panel--middle">
+        <span>引用核验</span>
+        <strong>低幻觉问答</strong>
+        <i />
+      </div>
+      <div className="auth-page__data-panel auth-page__data-panel--bottom">
+        <span>学习路径</span>
+        <strong>实时校准</strong>
+        <i />
+      </div>
+      <div className="auth-page__signal-lines">
+        <span />
+        <span />
+        <span />
+      </div>
+    </div>
+  );
 }
 
 /** 渲染产品介绍与账号登录注册联动页面。 */
@@ -116,18 +148,11 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const backgroundQuery = useQuery({
-    queryKey: ['login-background-settings'],
-    queryFn: () => api.loginBackgroundSettings(),
-    staleTime: 5 * 60 * 1000,
-  });
-
   const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
   const postAuthTarget = preserveDataModeParam(from, location.search);
   const loginPath = preserveDataModeParam('/login', location.search);
   const registerPath = preserveDataModeParam('/register', location.search);
-  const title = isRegister ? '创建学习账号' : '登录智课工坊';
+  const title = isRegister ? '创建学习账号' : '登录智课未来';
   const subtitle = isRegister
     ? '选择学生或教师身份，注册后进入对应角色的学习与教学工作台。'
     : `登录后继续进入${getTargetLabel(from)}。`;
@@ -135,17 +160,8 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
   const passwordStrength = getPasswordStrength(password);
   const passwordStrengthLabel = ['待完善', '基础', '良好', '稳健'][passwordStrength] ?? '待完善';
   const canUseDemo = Boolean(demoCredentials);
-  const backgroundSettings = useMemo(
-    () => normalizeLoginBackgroundSettings(backgroundQuery.data),
-    [backgroundQuery.data],
-  );
-  const backgroundStyle = useMemo(
-    () => buildLoginBackgroundStyle(backgroundSettings),
-    [backgroundSettings],
-  );
-  const showBackgroundMedia = backgroundSettings.enabled && Boolean(backgroundSettings.media_url.trim());
   // 用户级外观主题优先于管理员 login_background 配置：
-  // 若用户在个人设置启用了自定义主题，登录页也跟随，并隐藏管理员视频层。
+  // 若用户在个人设置启用了自定义主题，登录页也跟随。
   // 用户主题激活时：main 自身不再注入背景样式，由独立 fixed 背景层承载，
   // 避免背景样式干扰 auth-page 内部 absolute/flex 定位。
   const appearance = useAppearance();
@@ -158,63 +174,11 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
     () => buildWorkspaceBackgroundLayerStyle(appearance),
     [appearance],
   );
-  // 用户主题激活时仅保留文字颜色变量，背景交给独立层；否则保持管理员配置原样。
-  const mergedBackgroundStyle = userThemeActive ? appearanceStyle : backgroundStyle;
-  const showVideoLayer = showBackgroundMedia && !userThemeActive;
+  const mergedBackgroundStyle = userThemeActive ? appearanceStyle : undefined;
 
   useEffect(() => {
     setError('');
   }, [mode]);
-
-  useEffect(() => {
-    // 用户主题激活时不播放管理员视频，直接跳过 effect。
-    if (userThemeActive) return undefined;
-    if (!backgroundSettings.enabled || backgroundSettings.media_type !== 'video') return undefined;
-    const video = videoRef.current;
-    if (!video) return undefined;
-
-    let animationFrame = 0;
-    let restartTimer: number | undefined;
-    let cancelled = false;
-
-    // 手动控制视频首尾透明度，避免原生 loop 产生突兀跳帧。
-    const syncOpacity = (): void => {
-      const duration = video.duration;
-      if (!Number.isFinite(duration) || duration <= 0) {
-        video.style.opacity = '1';
-        animationFrame = window.requestAnimationFrame(syncOpacity);
-        return;
-      }
-
-      const fadeDuration = 0.5;
-      const minVisibleOpacity = 0.96;
-      const fadeInOpacity = Math.min(1, video.currentTime / fadeDuration);
-      const fadeOutOpacity = Math.max(0, Math.min(1, (duration - video.currentTime) / fadeDuration));
-      const loopOpacity = Math.min(fadeInOpacity, fadeOutOpacity);
-      video.style.opacity = String(minVisibleOpacity + (1 - minVisibleOpacity) * loopOpacity);
-      animationFrame = window.requestAnimationFrame(syncOpacity);
-    };
-
-    const restartVideo = (): void => {
-      video.style.opacity = '0.96';
-      restartTimer = window.setTimeout(() => {
-        if (cancelled) return;
-        video.currentTime = 0;
-        void video.play().catch(() => undefined);
-      }, 100);
-    };
-
-    video.addEventListener('ended', restartVideo);
-    void video.play().catch(() => undefined);
-    animationFrame = window.requestAnimationFrame(syncOpacity);
-
-    return () => {
-      cancelled = true;
-      window.cancelAnimationFrame(animationFrame);
-      if (restartTimer !== undefined) window.clearTimeout(restartTimer);
-      video.removeEventListener('ended', restartVideo);
-    };
-  }, [backgroundSettings.enabled, backgroundSettings.media_type, backgroundSettings.media_url, userThemeActive]);
 
   if (token) {
     return <Navigate to={resolveAuthTarget(sessionUser?.role, postAuthTarget)} replace />;
@@ -288,32 +252,15 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
       {userThemeActive && (
         <div className="ai-workspace-background-layer" aria-hidden="true" style={backgroundLayerStyle} />
       )}
-      <div className="auth-page__video-layer" aria-hidden="true">
-        {showVideoLayer && backgroundSettings.media_type === 'video' && (
-          <video
-            key={backgroundSettings.media_url}
-            ref={videoRef}
-            className="auth-page__video auth-page__media"
-            muted
-            playsInline
-            preload="auto"
-          >
-            <source src={backgroundSettings.media_url} type={resolveVideoMimeType(backgroundSettings.media_url)} />
-          </video>
-        )}
-        {showVideoLayer && backgroundSettings.media_type === 'image' && (
-          <img className="auth-page__video auth-page__media" src={backgroundSettings.media_url} alt="" />
-        )}
-        <div className="auth-page__video-vignette" />
-      </div>
+      <AuthDynamicScene />
 
       <div className="auth-page__content relative z-10 mx-auto flex min-h-dvh w-full max-w-7xl flex-col px-6 py-6 sm:px-8">
         <header className="auth-page__nav animate-fade-rise">
           <Link to={loginPath} className="auth-page__brand">
-            <img src={logoUrl} alt="智课工坊" className="h-10 w-10" />
+            <img src={logoUrl} alt="智课未来" className="h-10 w-10" />
             <span className="min-w-0">
-              <span className="auth-display block text-3xl leading-none text-black">智课工坊</span>
-              <span className="block text-xs font-semibold text-neutral-500">AI 原生学习空间</span>
+              <span className="auth-page__brand-name auth-display block text-black">智课未来</span>
+              <span className="block text-xs font-semibold text-neutral-500">可信 AI 学伴平台</span>
             </span>
           </Link>
           <div className="hidden items-center gap-2 sm:flex">
@@ -338,14 +285,14 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
           <div className="auth-page__hero">
             <div className="auth-page__eyebrow animate-fade-rise">
               <Sparkles size={16} />
-              课程知识库 · 学习画像 · 多智能体生成
+              私有化 · 可信问答 · 学练评闭环
             </div>
             <h1 className="auth-page__headline auth-display animate-fade-rise">
-              <span>知识噪声之外，</span>
-              <em>生成学习路径。</em>
+              <span>私有化 AI 学伴，</span>
+              <em>懂课程，会进化。</em>
             </h1>
             <p className="auth-page__description animate-fade-rise-delay">
-              面向高校课程学习场景，把课程知识、学习画像、路径规划、资源生产和质量校验放进同一个可追踪的工作台。
+              以本地 AI、混合检索、多智能体编排和学情画像为底座，把问答、路径、资源生成与教学诊断串成可信闭环。
             </p>
 
             <div className="auth-page__stats animate-fade-rise-delay">
@@ -398,7 +345,7 @@ export function AuthPage({ mode }: { mode: AuthMode }): JSX.Element {
 
               <div>
                 <p className="auth-page__form-kicker">账号入口</p>
-                <h2 className="auth-display mt-2 text-4xl font-normal leading-none text-black">{title}</h2>
+                <h2 className="auth-page__form-title auth-display mt-2 text-black">{title}</h2>
                 <p className="mt-3 text-sm leading-6 text-neutral-500">{subtitle}</p>
               </div>
 

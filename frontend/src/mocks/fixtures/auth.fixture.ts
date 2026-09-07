@@ -1,4 +1,4 @@
 export const authMock = {
-  user: { id: 'mock-user-zhang', name: '张同学', role: 'student', email: 'zhang@example.edu.cn' },
+  user: { id: 'mock-admin', name: '管理员', role: 'admin', email: 'admin@example.edu.cn' },
   token: 'mock-session-token',
 };

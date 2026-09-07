@@ -65,6 +65,7 @@ def upgrade() -> None:
         sa.Column("source", sa.String(30), nullable=False, server_default="local_test"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        if_not_exists=True,
     )
     bind = op.get_bind()
     course_id = bind.execute(
@@ -93,4 +94,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """回滚时删除题库表。"""
-    op.drop_table("ta_question_bank")
+    op.drop_table("ta_question_bank", if_exists=True)

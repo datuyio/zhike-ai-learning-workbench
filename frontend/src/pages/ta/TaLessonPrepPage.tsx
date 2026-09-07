@@ -6,7 +6,6 @@ import {
   taDeleteLessonPlan, taDeleteLessonPlans, taGenerateLessonPlan, taListLessonPlans, taPublishLessonPlan,
   taUpdateLessonPlan, type TaLessonPlan,
 } from '../../api/ta';
-import { AiFeedbackWidget } from '../../components/ta/AiFeedbackWidget';
 import { PageHeader, PageHeaderToolbar } from '../../components/shared/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '../../components/shared/StateBlock';
 import { WorkspaceToast, type WorkspaceToastItem } from '../../components/shared/WorkspaceToast';
@@ -414,10 +413,6 @@ export function TaLessonPrepPage(): JSX.Element {
                 <button type="button" className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-red-600 hover:bg-red-50" disabled={deleteMutation.isPending} onClick={() => confirmDeletePlan(plan)}>
                   <Trash2 size={13} /> 删除
                 </button>
-              </div>
-              {/* 持续学习闭环：教师对 AI 教案评分，反馈驱动后续生成校准 */}
-              <div className="mt-3 border-t border-zinc-100 pt-3">
-                <AiFeedbackWidget targetType="lesson_plan" targetId={plan.id} courseId={plan.course_id ?? undefined} compact />
               </div>
             </div>
           ))}

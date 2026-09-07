@@ -42,6 +42,7 @@ import {
 } from './mockAdapter';
 import { authMock, learningMock, mockCourses } from '../mocks/fixtures';
 import { readLocalJson, writeLocalJson } from '../utils/browser-storage';
+import { readAuthUser } from '../utils/auth-storage';
 import type {
   AssessmentResult,
   Citation,
@@ -245,6 +246,22 @@ export type AuthResponse = {
     email?: string | null;
   };
 };
+
+function isMockAuthUser(value: unknown): value is AuthResponse['user'] {
+  if (!isRecord(value)) return false;
+  const email = value.email;
+  return (
+    typeof value.id === 'string'
+    && typeof value.name === 'string'
+    && typeof value.role === 'string'
+    && (email === undefined || email === null || typeof email === 'string')
+  );
+}
+
+function resolveMockAuthUser(): AuthResponse['user'] {
+  // Mock 预览时优先沿用当前会话角色，方便直接验证管理端与助教端页面。
+  return readAuthUser<AuthResponse['user']>(isMockAuthUser) ?? authMock.user;
+}
 
 export type CourseCreatePayload = {
   slug?: string;
@@ -2739,14 +2756,14 @@ export const api = {
       }),
   me: () =>
     shouldUseMockData()
-      ? Promise.resolve({ user: authMock.user })
+      ? Promise.resolve({ user: resolveMockAuthUser() })
       : request<{ user: AuthResponse['user'] }>('/auth/me', {
         credentials: 'include',
         validate: parseCurrentUserResponse,
       }),
   updateMe: (payload: UpdateMePayload) =>
     shouldUseMockData()
-      ? Promise.resolve({ user: { ...authMock.user, name: payload.name.trim() || authMock.user.name } })
+      ? Promise.resolve({ user: { ...resolveMockAuthUser(), name: payload.name.trim() || resolveMockAuthUser().name } })
       : request<{ user: AuthResponse['user'] }>('/auth/me', {
         method: 'PATCH',
         credentials: 'include',
@@ -2765,7 +2782,7 @@ export const api = {
       ? Promise.resolve({ items: mockActiveCourses() })
       : request<{ items: Course[] }>('/admin/courses', { validate: parseCourseListResponse }),
   myCourses: () => shouldUseMockData()
-    ? Promise.resolve({ user: authMock.user.name, items: mockFixtureCourses() })
+    ? Promise.resolve({ user: resolveMockAuthUser().name, items: mockFixtureCourses() })
     : request<{ user: string; items: Course[] }>('/me/courses', { validate: parseUserCourseListResponse }),
   currentCourse: () => shouldUseMockData()
     ? Promise.resolve({ course_id: 'deep_learning_001' })

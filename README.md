@@ -667,7 +667,10 @@ VITE_USE_MOCKS=true npm run dev
 
 # 或在浏览器追加 ?mock=1 临时切换
 http://localhost:5173/dashboard?mock=1
+http://localhost:5173/admin/knowledge-base?mock=1
 ```
+
+Mock 演示账号默认为管理员，用于无需后端时快速进入管理后台；从受保护页面跳转到登录页会保留 `?mock=1` 和原目标，点击「快速体验」后返回对应页面。
 
 ### 架构约定
 

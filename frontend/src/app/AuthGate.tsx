@@ -36,7 +36,8 @@ export function AuthGate(): JSX.Element {
   }, [token, updateUser, clearSession]);
 
   if (!token || authStatus === 'invalid') {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    const from = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to={{ pathname: '/login', search: location.search }} replace state={{ from }} />;
   }
 
   if (authStatus === 'checking') {
